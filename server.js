@@ -1,15 +1,25 @@
 const express = require('express');
-const fs = require('fs');
 const path = require('path');
+const sqlite3 = require('sqlite3').verbose();
 const app = express();
 const PORT = 80;
 
-const DB_FILE = path.join(__dirname, 'database.json');
+const DB_FILE = path.join(__dirname, 'database.db');
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(__dirname));
 
-// Default database template if file doesn't exist
+// Connect to SQLite Database
+const dbConnection = new sqlite3.Database(DB_FILE, (err) => {
+  if (err) {
+    console.error('Failed to connect to SQLite database:', err.message);
+  } else {
+    console.log('Connected to SQLite database at:', DB_FILE);
+    initializeDatabase();
+  }
+});
+
+// Default database template if db is empty
 const DEFAULT_DATA = {
   products: [],
   categories: ['Drinks', 'Food', 'Snacks', 'Electronics', 'Cosmetics', 'Clothing', 'Home Supplies'],
@@ -36,38 +46,66 @@ const DEFAULT_DATA = {
 let gateClearanceActive = false;
 let remoteScanEvent = null;
 
-// Read database from file
-function readDB() {
-  try {
-    if (!fs.existsSync(DB_FILE)) {
-      fs.writeFileSync(DB_FILE, JSON.stringify(DEFAULT_DATA, null, 2));
-      return DEFAULT_DATA;
-    }
-    return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-  } catch (e) {
-    return DEFAULT_DATA;
-  }
+// Initialize SQLite table and default dataset
+function initializeDatabase() {
+  dbConnection.serialize(() => {
+    dbConnection.run(`
+      CREATE TABLE IF NOT EXISTS store_data (
+        key TEXT PRIMARY KEY,
+        val TEXT
+      )
+    `);
+
+    // Check if default data is already inserted
+    dbConnection.get("SELECT val FROM store_data WHERE key = 'pos_dataset'", (err, row) => {
+      if (err) {
+        console.error(err.message);
+        return;
+      }
+      if (!row) {
+        dbConnection.run(
+          "INSERT INTO store_data (key, val) VALUES ('pos_dataset', ?)",
+          [JSON.stringify(DEFAULT_DATA)],
+          (insertErr) => {
+            if (insertErr) console.error('Failed to initialize default store dataset:', insertErr.message);
+            else console.log('SQLite database initialized with default template accounts.');
+          }
+        );
+      }
+    });
+  });
 }
 
-// Write database to file
-function writeDB(data) {
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
-// API: Get Database
+// API: Get Database from SQLite
 app.get('/api/db', (req, res) => {
-  res.json(readDB());
+  dbConnection.get("SELECT val FROM store_data WHERE key = 'pos_dataset'", (err, row) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    if (!row) {
+      return res.json(DEFAULT_DATA);
+    }
+    try {
+      res.json(JSON.parse(row.val));
+    } catch (e) {
+      res.json(DEFAULT_DATA);
+    }
+  });
 });
 
-// API: Save Database
+// API: Save Database to SQLite
 app.post('/api/db', (req, res) => {
-  const success = writeDB(req.body);
-  res.json({ success });
+  const jsonStr = JSON.stringify(req.body);
+  dbConnection.run(
+    "INSERT OR REPLACE INTO store_data (key, val) VALUES ('pos_dataset', ?)",
+    [jsonStr],
+    (err) => {
+      if (err) {
+        return res.status(500).json({ success: false, error: err.message });
+      }
+      res.json({ success: true });
+    }
+  );
 });
 
 // API: Remote Scanning Event Sync
@@ -96,5 +134,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Smart POS Backend running at http://localhost:${PORT}`);
+  console.log(`Smart POS SQLite Backend running at http://localhost:${PORT}`);
 });
