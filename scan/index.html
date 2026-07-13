@@ -212,13 +212,22 @@
         timestamp: Date.now()
       };
 
-      // Set key to trigger storage event on other tabs
+      // Set key to trigger storage event on other tabs locally
       localStorage.setItem('remote_scan_event', JSON.stringify(payload));
       
+      // Post to Node server to distribute to other devices wirelessly
+      if (serverMode) {
+        fetch('/api/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).catch(err => console.error(err));
+      }
+
       // Vibrate to confirm scan success
       if (navigator.vibrate) navigator.vibrate([150, 50, 150]);
 
-      appendConsole(`SUCCESS: Sent barcode ${barcode} to ${activeTarget === 'self' ? 'Self-Checkout' : 'Cashier POS'}`);
+      appendConsole(`SUCCESS: Sent barcode ${barcode} to target ${activeTarget}`);
     }
 
     function sendManualScan() {
