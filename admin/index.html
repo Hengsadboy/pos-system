@@ -294,18 +294,25 @@
 
           <!-- SUBTAB: EMPLOYEES -->
           <div id="subtab-admin-employees" class="subtab-view">
-            <h2 class="section-title">Employee Roles & Permissions</h2>
+            <div class="view-header">
+              <h2 class="section-title">Employee Roles & Permissions</h2>
+              <button class="btn btn-primary" id="btn-show-add-employee"><i class="fa-solid fa-user-plus"></i> Add Account</button>
+            </div>
             <div class="content-card">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Role</th>
-                    <th>Permissions</th>
-                  </tr>
-                </thead>
-                <tbody id="admin-employees-table"></tbody>
-              </table>
+              <div style="overflow-x: auto;">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Role</th>
+                      <th>Permissions</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-employees-table"></tbody>
+                </table>
+              </div>
             </div>
           </div>
 
@@ -486,6 +493,48 @@
         </form>
       </div>
     </div>
+  <!-- MODAL: ADD EMPLOYEE -->
+  <div class="modal-overlay" id="modal-add-employee">
+    <div class="modal-card max-width-md">
+      <div class="modal-header">
+        <h3>Add Employee Account</h3>
+        <button class="modal-close" id="btn-close-employee-modal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="form-new-employee">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="emp-name">Full Name *</label>
+              <input type="text" id="emp-name" class="form-input" required placeholder="e.g. POS-1 Terminal">
+            </div>
+            <div class="form-group">
+              <label for="emp-email">Email Address *</label>
+              <input type="email" id="emp-email" class="form-input" required placeholder="e.g. pos1@test.com">
+            </div>
+            <div class="form-group">
+              <label for="emp-pass">Password *</label>
+              <input type="text" id="emp-pass" class="form-input" required placeholder="Heng@1188">
+            </div>
+            <div class="form-group">
+              <label for="emp-role">System Role *</label>
+              <select id="emp-role" class="form-input" required>
+                <option value="POS Kiosk">POS Kiosk (Self-Checkout Kiosk)</option>
+                <option value="Cashier">Cashier (Touch Terminal cashiers)</option>
+                <option value="Manager">Manager</option>
+                <option value="Super Admin">Super Admin</option>
+              </select>
+            </div>
+            <div class="form-group form-span-2">
+              <label for="emp-perms">Permissions Description</label>
+              <input type="text" id="emp-perms" class="form-input" value="POS Scan, Checkout" placeholder="e.g. Add Products, Edit Prices, Refund, Reports">
+            </div>
+          </div>
+          <div class="form-group margin-top text-right">
+            <button type="submit" class="btn btn-success">Save Account</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 
   <script src="../shared/app.js"></script>
@@ -604,6 +653,42 @@
         saveDB();
         document.getElementById('form-new-product').reset();
         addProdModal.classList.remove('active');
+      });
+
+      // Modal employee controllers
+      const addEmpModal = document.getElementById('modal-add-employee');
+      const btnShowAddEmployee = document.getElementById('btn-show-add-employee');
+      const btnCloseEmployeeModal = document.getElementById('btn-close-employee-modal');
+
+      if (btnShowAddEmployee) {
+        btnShowAddEmployee.onclick = () => addEmpModal.classList.add('active');
+      }
+      if (btnCloseEmployeeModal) {
+        btnCloseEmployeeModal.onclick = () => addEmpModal.classList.remove('active');
+      }
+
+      // Submit employee account
+      document.getElementById('form-new-employee').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('emp-name').value;
+        const email = document.getElementById('emp-email').value.trim();
+        const password = document.getElementById('emp-pass').value.trim();
+        const role = document.getElementById('emp-role').value;
+        const permissions = document.getElementById('emp-perms').value || 'POS Scan, Checkout';
+
+        // Check if email already exists
+        const exists = db.employees.some(emp => emp.email === email);
+        if (exists) {
+          alert('Employee email already registered!');
+          return;
+        }
+
+        db.employees.push({ name, email, password, role, permissions });
+        logConsole(`New employee account added: ${name} (${role})`, 'success');
+        saveDB();
+
+        document.getElementById('form-new-employee').reset();
+        addEmpModal.classList.remove('active');
       });
 
       // Apply inventory adjustment
@@ -776,13 +861,22 @@
         </tr>
       `).join('');
 
-      document.getElementById('admin-employees-table').innerHTML = db.employees.map(e => `
-        <tr>
-          <td><strong>${e.name}</strong></td>
-          <td><span class="badge badge-neutral">${e.role}</span></td>
-          <td><small>${e.permissions}</small></td>
-        </tr>
-      `).join('');
+      document.getElementById('admin-employees-table').innerHTML = db.employees.map(e => {
+        const isSelf = e.email === 'chhayheng@gmail.com';
+        const deleteButton = isSelf ? 
+          '<span class="badge badge-neutral">System Root</span>' : 
+          `<button class="btn btn-outline btn-text text-danger" onclick="deleteEmployee('${e.email}')" style="padding: 4px 8px; font-size: 0.75rem;">Delete</button>`;
+        
+        return `
+          <tr>
+            <td><strong>${e.name}</strong></td>
+            <td><code>${e.email}</code></td>
+            <td><span class="badge badge-neutral">${e.role}</span></td>
+            <td><small>${e.permissions}</small></td>
+            <td>${deleteButton}</td>
+          </tr>
+        `;
+      }).join('');
 
       // Reports summary
       const totalCost = db.products.reduce((acc, p) => acc + (p.cost * p.stock), 0);
@@ -815,6 +909,21 @@
       if (pSup) pSup.innerHTML = '<option value="">Select Supplier</option>' + db.suppliers.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
       const invSel = document.getElementById('inv-select-product');
       if (invSel) invSel.innerHTML = db.products.map(p => `<option value="${p.id}">${p.name} (Stock: ${p.stock})</option>`).join('');
+    }
+
+    function deleteEmployee(email) {
+      if (email === 'chhayheng@gmail.com') {
+        alert('Cannot delete the system root admin account!');
+        return;
+      }
+      if (confirm(`Are you sure you want to delete employee account "${email}"?`)) {
+        const idx = db.employees.findIndex(emp => emp.email === email);
+        if (idx !== -1) {
+          logConsole(`Deleted employee: ${db.employees[idx].name} (${db.employees[idx].role})`, 'warning');
+          db.employees.splice(idx, 1);
+          saveDB();
+        }
+      }
     }
   </script>
 </body>
