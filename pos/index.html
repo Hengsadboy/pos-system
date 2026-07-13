@@ -518,10 +518,8 @@
       let khqrPollInterval = null;
 
       const processApprovedPayment = (method) => {
-        document.getElementById('payment-gate-selection').classList.add('hidden');
-        document.getElementById('khqr-payment-container').classList.add('hidden');
-        document.getElementById('payment-gate-processing').classList.add('hidden');
-        document.getElementById('payment-gate-success').classList.remove('hidden');
+        document.getElementById('modal-payment-gateway').classList.remove('active');
+        document.getElementById('modal-view-receipt').classList.add('active');
 
         // Inventory deduction
         const txNumber = 'TX-' + Math.floor(10000 + Math.random() * 90000);

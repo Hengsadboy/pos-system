@@ -541,10 +541,8 @@
       let khqrPollInterval = null;
 
       const processApprovedPayment = (method) => {
-        document.getElementById('payment-gate-selection').classList.add('hidden');
-        document.getElementById('khqr-payment-container').classList.add('hidden');
-        document.getElementById('payment-gate-processing').classList.add('hidden');
-        document.getElementById('payment-gate-success').classList.remove('hidden');
+        document.getElementById('modal-payment-gateway').classList.remove('active');
+        document.getElementById('modal-view-receipt').classList.add('active');
 
         const txNumber = 'TX-' + Math.floor(10000 + Math.random() * 90000);
         const dateStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
