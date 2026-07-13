@@ -236,6 +236,21 @@
       initCartActions();
       updatePageViews();
       logConsole('Cashier Operator terminal ready.', 'info');
+
+      // Listen to remote scan events from phone scanner
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'remote_scan_event' && e.newValue) {
+          try {
+            const data = JSON.parse(e.newValue);
+            if (data.target === 'cashier') {
+              triggerScan(data.barcode);
+              logConsole(`Remote Phone Scan Applied: ${data.barcode}`, 'success');
+            }
+          } catch(err) {
+            console.error(err);
+          }
+        }
+      });
     });
 
     let html5QrcodeScanner = null;

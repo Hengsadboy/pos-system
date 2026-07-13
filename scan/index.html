@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mobile Barcode Scanner</title>
+  <link rel="stylesheet" href="../shared/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .scanner-header {
+      background-color: #1e293b;
+      padding: 16px;
+      text-align: center;
+      border-bottom: 1px solid #334155;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    }
+    .scanner-header h1 {
+      font-size: 1.25rem;
+      margin: 0 0 4px 0;
+      color: #38bdf8;
+      font-weight: 700;
+    }
+    .scanner-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      position: relative;
+    }
+    #camera-feed-box {
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 3px solid #38bdf8;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+      background-color: #000;
+      position: relative;
+    }
+    .scanner-target-select {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 20px;
+      background-color: #1e293b;
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid #334155;
+    }
+    .target-label {
+      font-size: 0.875rem;
+      color: #94a3b8;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .target-options {
+      display: flex;
+      gap: 12px;
+    }
+    .target-btn {
+      flex: 1;
+      background-color: #334155;
+      border: 2px solid transparent;
+      color: #f8fafc;
+      padding: 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .target-btn.active {
+      background-color: #0369a1;
+      border-color: #38bdf8;
+      color: #fff;
+    }
+    .manual-input-box {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 16px;
+    }
+    .input-action-group {
+      display: flex;
+      gap: 8px;
+    }
+    .scan-input {
+      flex: 1;
+      background-color: #1e293b;
+      border: 1px solid #334155;
+      color: #fff;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    .scan-input:focus {
+      outline: none;
+      border-color: #38bdf8;
+    }
+    .console-log {
+      width: 100%;
+      max-width: 400px;
+      height: 80px;
+      background-color: #020617;
+      border-radius: 8px;
+      margin-top: 16px;
+      padding: 8px 12px;
+      font-family: monospace;
+      font-size: 0.75rem;
+      overflow-y: auto;
+      border: 1px solid #1e293b;
+      color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+  <div class="scanner-header">
+    <h1><i class="fa-solid fa-mobile-screen"></i> Wireless Phone Scanner</h1>
+    <p style="margin: 0; font-size: 0.8125rem; color: #94a3b8;">Linked to storefront cloud database</p>
+  </div>
+
+  <div class="scanner-main">
+    <div id="camera-feed-box"></div>
+
+    <div class="scanner-target-select">
+      <span class="target-label">Link Scan Destination:</span>
+      <div class="target-options">
+        <button class="target-btn active" id="target-self" onclick="setTarget('self')">
+          <i class="fa-solid fa-desktop"></i> Self POS
+        </button>
+        <button class="target-btn" id="target-cashier" onclick="setTarget('cashier')">
+          <i class="fa-solid fa-cash-register"></i> Cashier POS
+        </button>
+      </div>
+    </div>
+
+    <div class="manual-input-box">
+      <div class="input-action-group">
+        <input type="text" id="manual-barcode" class="scan-input" placeholder="Or enter barcode manually...">
+        <button class="btn btn-primary" onclick="sendManualScan()" style="padding: 0 16px;">Send</button>
+      </div>
+    </div>
+
+    <div class="console-log" id="scan-console">
+      [System] Phone scanner active. Waiting for code...
+    </div>
+  </div>
+
+  <script src="../shared/app.js"></script>
+  <script>
+    let activeTarget = 'self';
+    let html5QrcodeScanner = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      startCamera();
+      // Setup enter key listener on manual field
+      document.getElementById('manual-barcode').onkeypress = (e) => {
+        if (e.key === 'Enter') sendManualScan();
+      };
+    });
+
+    function setTarget(target) {
+      activeTarget = target;
+      document.getElementById('target-self').classList.toggle('active', target === 'self');
+      document.getElementById('target-cashier').classList.toggle('active', target === 'cashier');
+      appendConsole(`Target destination switched to: ${target === 'self' ? 'Self POS' : 'Cashier POS'}`);
+    }
+
+    function startCamera() {
+      html5QrcodeScanner = new Html5Qrcode("camera-feed-box");
+      const config = { fps: 20, qrbox: { width: 250, height: 250 } };
+      
+      html5QrcodeScanner.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText) => {
+          sendScanEvent(decodedText);
+        }
+      ).catch(err => {
+        appendConsole("Camera access failed. Check permissions.");
+      });
+    }
+
+    function sendScanEvent(barcode) {
+      if (!barcode) return;
+      
+      const payload = {
+        barcode: barcode,
+        target: activeTarget,
+        timestamp: Date.now()
+      };
+
+      // Set key to trigger storage event on other tabs
+      localStorage.setItem('remote_scan_event', JSON.stringify(payload));
+      
+      // Vibrate to confirm scan success
+      if (navigator.vibrate) navigator.vibrate([150, 50, 150]);
+
+      appendConsole(`SUCCESS: Sent barcode ${barcode} to ${activeTarget === 'self' ? 'Self-Checkout' : 'Cashier POS'}`);
+    }
+
+    function sendManualScan() {
+      const field = document.getElementById('manual-barcode');
+      const val = field.value.trim();
+      if (val) {
+        sendScanEvent(val);
+        field.value = '';
+      }
+    }
+
+    function appendConsole(msg) {
+      const c = document.getElementById('scan-console');
+      c.innerHTML += `<br>[${new Date().toLocaleTimeString()}] ${msg}`;
+      c.scrollTop = c.scrollHeight;
+    }
+  </script>
+</body>
+</html>
