@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Exit Gate Simulator</title>
+  <link rel="stylesheet" href="../shared/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <header class="system-header">
+    <div class="logo-area">
+      <div class="logo-icon"><i class="fa-solid fa-door-open"></i></div>
+      <div class="logo-text">
+        <h1 id="store-display-name">StoreFront Pro</h1>
+        <span>Smart Exit Gate Controller</span>
+      </div>
+    </div>
+    <div class="db-status">
+      <span class="status-indicator online"></span>
+      <span class="status-text">Sensor: Active</span>
+    </div>
+  </header>
+
+  <main class="system-content">
+    <section id="view-gate" class="tab-view active">
+      <div class="gate-layout">
+        <div class="gate-simulator-card">
+          <div class="card-header center-text">
+            <h2>Smart Exit Gate Simulator</h2>
+            <p>Verification Station post-checkout</p>
+          </div>
+          <div class="card-body gate-simulation-grid">
+            <div class="gate-physical-simulation">
+              <div class="gate-light-pole">
+                <div class="gate-light red active" id="gate-light-red"></div>
+                <div class="gate-light green" id="gate-light-green"></div>
+              </div>
+              <div class="gate-barrier-container">
+                <div class="gate-barrier-bar closed" id="gate-barrier-bar">
+                  <span class="gate-text">EXIT CLOSED</span>
+                </div>
+              </div>
+              <div class="gate-alarm-siren" id="gate-alarm-siren">
+                <i class="fa-solid fa-bell"></i> ALARM
+              </div>
+            </div>
+
+            <!-- Controller Panel -->
+            <div class="gate-controls-panel">
+              <div class="status-panel-card">
+                <h3>Gate System Status</h3>
+                <div class="status-row">
+                  <span>Physical Gate Status:</span>
+                  <strong id="txt-gate-status" class="status-locked">LOCKED</strong>
+                </div>
+                <div class="status-row">
+                  <span>Security Alarm Level:</span>
+                  <strong id="txt-alarm-status" class="status-ok">SECURE</strong>
+                </div>
+              </div>
+
+              <div class="content-card">
+                <h3>Scan Ticket (Phone / Receipt)</h3>
+                <p class="help-text">Scan paid ticket code (e.g. TX-10001) to unlock gate</p>
+                <div class="input-action-group margin-top">
+                  <input type="text" id="input-gate-barcode" class="form-input" placeholder="Enter receipt code...">
+                  <button class="btn btn-primary" id="btn-trigger-gate-scan">Scan Ticket</button>
+                </div>
+              </div>
+
+              <div class="sensor-interaction content-card margin-top">
+                <h3>Simulate Sensor Event</h3>
+                <p class="help-text">Simulate a customer attempting to walk through the laser/IR detection frame.</p>
+                <div class="btn-group-vertical">
+                  <button class="btn btn-primary" id="btn-simulate-pass"><i class="fa-solid fa-person-walking-arrow-right"></i> Pass Gate Sensor</button>
+                </div>
+              </div>
+
+              <div class="admin-override content-card margin-top">
+                <h3>Manual Override Controls</h3>
+                <div class="btn-group">
+                  <button class="btn btn-success" id="btn-gate-open"><i class="fa-solid fa-lock-open"></i> Force Open</button>
+                  <button class="btn btn-danger" id="btn-gate-lock"><i class="fa-solid fa-lock"></i> Force Lock / Reset</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="system-logs-panel">
+    <div class="logs-header">
+      <h3><i class="fa-solid fa-terminal"></i> Central Gate Alarm Logs</h3>
+      <button class="btn-text" id="btn-clear-logs">Clear Logs</button>
+    </div>
+    <div class="logs-console" id="system-logs-console"></div>
+  </footer>
+
+  <script src="../shared/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      initGateSimulation();
+      updatePageViews();
+      logConsole('Smart Exit Gate Controller active.', 'info');
+    });
+
+    function initGateSimulation() {
+      const redLight = document.getElementById('gate-light-red');
+      const greenLight = document.getElementById('gate-light-green');
+      const gateBar = document.getElementById('gate-barrier-bar');
+      const siren = document.getElementById('gate-alarm-siren');
+      const gateStatusTxt = document.getElementById('txt-gate-status');
+      const alarmStatusTxt = document.getElementById('txt-alarm-status');
+
+      document.getElementById('btn-simulate-pass').onclick = () => {
+        logConsole('Motion sensor: Customer approached gate boundary.', 'info');
+        const clearance = localStorage.getItem('gate_clearance_active') === 'true';
+
+        if (clearance) {
+          // APPROVED
+          logConsole('Valid payment ticket matched. Unlocking gate...', 'success');
+          
+          redLight.classList.remove('active');
+          greenLight.classList.add('active');
+          gateBar.classList.remove('closed');
+          gateBar.classList.add('open');
+          
+          gateStatusTxt.innerText = 'UNLOCKED / OPEN';
+          gateStatusTxt.className = 'status-unlocked';
+          alarmStatusTxt.innerText = 'SECURE';
+          alarmStatusTxt.className = 'status-ok';
+
+          // Close after passage
+          setTimeout(() => {
+            logConsole('Laser sensor: Customer cleared exit boundary. Closing gate.', 'info');
+            gateBar.classList.remove('open');
+            gateBar.classList.add('closed');
+            greenLight.classList.remove('active');
+            redLight.classList.add('active');
+            
+            gateStatusTxt.innerText = 'LOCKED';
+            gateStatusTxt.className = 'status-locked';
+
+            // Clear clearance ticket
+            localStorage.setItem('gate_clearance_active', 'false');
+            logConsole('Exit Gate locked and reset for next customer.', 'info');
+          }, 3500);
+
+        } else {
+          // VIOLATION
+          logConsole('SECURITY BREACH DETECTED: Attempted exit without valid payment ticket!', 'error');
+          siren.classList.add('active');
+          alarmStatusTxt.innerText = 'BREACH ALARM ACTIVE';
+          alarmStatusTxt.className = 'status-alarm';
+
+          setTimeout(() => {
+            siren.classList.remove('active');
+            alarmStatusTxt.innerText = 'SECURE';
+            alarmStatusTxt.className = 'status-ok';
+          }, 5000);
+        }
+      };
+
+      // Override Open
+      document.getElementById('btn-gate-open').onclick = () => {
+        logConsole('Manual command: Force Open Gate activated.', 'warning');
+        localStorage.setItem('gate_clearance_active', 'true');
+        redLight.classList.remove('active');
+        greenLight.classList.add('active');
+        gateBar.classList.remove('closed');
+        gateBar.classList.add('open');
+        gateStatusTxt.innerText = 'EMERGENCY OPEN';
+        gateStatusTxt.className = 'status-unlocked';
+      };
+
+      // Override Close
+      document.getElementById('btn-gate-lock').onclick = () => {
+        logConsole('Manual command: Force Close Gate activated.', 'warning');
+        localStorage.setItem('gate_clearance_active', 'false');
+        siren.classList.remove('active');
+        gateBar.classList.remove('open');
+        gateBar.classList.add('closed');
+        greenLight.classList.remove('active');
+        redLight.classList.add('active');
+        gateStatusTxt.innerText = 'LOCKED';
+        gateStatusTxt.className = 'status-locked';
+        alarmStatusTxt.innerText = 'SECURE';
+        alarmStatusTxt.className = 'status-ok';
+      };
+
+      // Handle ticket scan
+      const processGateScan = () => {
+        const barcode = document.getElementById('input-gate-barcode').value.trim();
+        document.getElementById('input-gate-barcode').value = '';
+        if (!barcode) return;
+
+        logConsole(`Ticket Scanned: "${barcode}". Querying Cloud Database...`, 'info');
+        
+        // Find sales transaction matching receipt code
+        const matchedSale = db.sales.find(s => s.txNumber === barcode);
+
+        if (matchedSale) {
+          logConsole(`MATCH FOUND: Receipt ${barcode} verified as PAID via ${matchedSale.method}. Clear for exit.`, 'success');
+          localStorage.setItem('gate_clearance_active', 'true');
+          
+          // Auto-trigger the passage sensor!
+          document.getElementById('btn-simulate-pass').click();
+        } else {
+          logConsole(`NO MATCH FOUND: Receipt code "${barcode}" is invalid or unpaid!`, 'error');
+          localStorage.setItem('gate_clearance_active', 'false');
+          
+          // Trigger security alarm immediately
+          logConsole('SECURITY ALARM TRIGGERED: Unauthorized ticket scanned at Exit Gate!', 'error');
+          siren.classList.add('active');
+          alarmStatusTxt.innerText = 'BREACH ALARM ACTIVE';
+          alarmStatusTxt.className = 'status-alarm';
+
+          setTimeout(() => {
+            siren.classList.remove('active');
+            alarmStatusTxt.innerText = 'SECURE';
+            alarmStatusTxt.className = 'status-ok';
+          }, 5000);
+        }
+      };
+
+      document.getElementById('btn-trigger-gate-scan').onclick = processGateScan;
+      document.getElementById('input-gate-barcode').onkeypress = (e) => {
+        if (e.key === 'Enter') processGateScan();
+      };
+
+      document.getElementById('btn-clear-logs').onclick = () => {
+        document.getElementById('system-logs-console').innerHTML = '';
+      };
+    }
+
+    function updatePageViews() {
+      document.getElementById('store-display-name').innerText = db.settings.storeName;
+    }
+  </script>
+</body>
+</html>

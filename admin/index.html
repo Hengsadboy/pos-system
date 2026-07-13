@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Back-Office Panel</title>
+  <link rel="stylesheet" href="../shared/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <header class="system-header">
+    <div class="logo-area">
+      <div class="logo-icon"><i class="fa-solid fa-store"></i></div>
+      <div class="logo-text">
+        <h1 id="store-display-name">StoreFront Pro</h1>
+        <span>Admin Back-Office Panel</span>
+      </div>
+    </div>
+    <div class="db-status">
+      <span class="status-indicator online"></span>
+      <span class="status-text">Cloud Database: Connected</span>
+    </div>
+  </header>
+
+  <main class="system-content">
+    <section id="view-admin" class="tab-view">
+      <!-- Admin Login View -->
+      <div id="admin-login-screen" class="admin-login-container">
+        <div class="content-card login-card">
+          <div class="login-header center-text">
+            <div class="logo-icon margin-bottom" style="margin: 0 auto 16px;"><i class="fa-solid fa-lock"></i></div>
+            <h2>Admin Back-Office Login</h2>
+            <p class="help-text">Access store management & reports</p>
+          </div>
+          <form id="form-admin-login" class="margin-top">
+            <div class="form-group">
+              <label for="login-email">Email Address</label>
+              <input type="email" id="login-email" class="form-input" required value="chhayheng@gmail.com" placeholder="chhayheng@gmail.com">
+            </div>
+            <div class="form-group margin-top">
+              <label for="login-password">Password</label>
+              <input type="password" id="login-password" class="form-input" required value="Heng@1188" placeholder="••••••••">
+            </div>
+            <p id="login-error-msg" class="text-danger margin-top hidden" style="color: var(--danger); font-size: 0.8125rem; font-weight: 500;">Invalid email or password.</p>
+            <button type="submit" class="btn btn-primary btn-block btn-lg margin-top">Log In</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="admin-layout hidden" id="admin-main-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="admin-sidebar">
+          <ul class="sidebar-menu">
+            <li class="menu-item active" data-subtab="admin-dashboard"><i class="fa-solid fa-gauge"></i> Dashboard</li>
+            <li class="menu-item" data-subtab="admin-products"><i class="fa-solid fa-boxes-stacked"></i> Products</li>
+            <li class="menu-item" data-subtab="admin-inventory"><i class="fa-solid fa-warehouse"></i> Inventory</li>
+            <li class="menu-item" data-subtab="admin-categories"><i class="fa-solid fa-tags"></i> Categories</li>
+            <li class="menu-item" data-subtab="admin-suppliers"><i class="fa-solid fa-truck-field"></i> Suppliers</li>
+            <li class="menu-item" data-subtab="admin-customers"><i class="fa-solid fa-users"></i> Customers</li>
+            <li class="menu-item" data-subtab="admin-employees"><i class="fa-solid fa-user-tie"></i> Employees</li>
+            <li class="menu-item" data-subtab="admin-reports"><i class="fa-solid fa-chart-pie"></i> Reports</li>
+            <li class="menu-item" data-subtab="admin-settings"><i class="fa-solid fa-gears"></i> Settings</li>
+          </ul>
+        </aside>
+
+        <!-- Main Admin Canvas -->
+        <div class="admin-canvas">
+          
+          <!-- SUBTAB: DASHBOARD -->
+          <div id="subtab-admin-dashboard" class="subtab-view active">
+            <h2 class="section-title">Dashboard Overview</h2>
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-icon blue"><i class="fa-solid fa-cash-register"></i></div>
+                <div class="metric-info">
+                  <h3>Today's Sales</h3>
+                  <p id="stat-today-sales">0</p>
+                </div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-icon green"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                <div class="metric-info">
+                  <h3>Today's Revenue</h3>
+                  <p id="stat-today-revenue">$0.00</p>
+                </div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-icon purple"><i class="fa-solid fa-coins"></i></div>
+                <div class="metric-info">
+                  <h3>Today's Profit</h3>
+                  <p id="stat-today-profit">$0.00</p>
+                </div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-icon orange"><i class="fa-solid fa-box"></i></div>
+                <div class="metric-info">
+                  <h3>Total Products</h3>
+                  <p id="stat-total-products">0</p>
+                </div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div class="metric-info">
+                  <h3>Low Stock Items</h3>
+                  <p id="stat-low-stock">0</p>
+                </div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-icon grey"><i class="fa-solid fa-network-wired"></i></div>
+                <div class="metric-info">
+                  <h3>POS Status</h3>
+                  <p id="stat-pos-status">Online</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="dashboard-details">
+              <div class="details-left">
+                <div class="content-card">
+                  <div class="card-header">
+                    <h3>Top Selling Products</h3>
+                  </div>
+                  <div class="card-body">
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>Product</th>
+                          <th>Price</th>
+                          <th>Qty Sold</th>
+                          <th>Total Revenue</th>
+                        </tr>
+                      </thead>
+                      <tbody id="dashboard-top-selling"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              <div class="details-right">
+                <div class="content-card">
+                  <div class="card-header">
+                    <h3>Recent Transactions</h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="transaction-timeline" id="dashboard-recent-tx"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUBTAB: PRODUCTS -->
+          <div id="subtab-admin-products" class="subtab-view">
+            <div class="view-header">
+              <h2 class="section-title">Product Catalog</h2>
+              <button class="btn btn-primary" id="btn-show-add-product"><i class="fa-solid fa-plus"></i> Add New Product</button>
+            </div>
+            <div class="content-card">
+              <div style="overflow-x: auto;">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Image</th>
+                      <th>Product Name</th>
+                      <th>Category</th>
+                      <th>Barcode</th>
+                      <th>Cost Price</th>
+                      <th>Selling Price</th>
+                      <th>Stock</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-products-table"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUBTAB: INVENTORY -->
+          <div id="subtab-admin-inventory" class="subtab-view">
+            <h2 class="section-title">Inventory Management</h2>
+            <div class="inventory-controls content-card">
+              <h3>Stock Operations</h3>
+              <div class="form-grid-three">
+                <div class="form-group">
+                  <label for="inv-select-product">Select Product</label>
+                  <select id="inv-select-product" class="form-input"></select>
+                </div>
+                <div class="form-group">
+                  <label for="inv-action-type">Operation</label>
+                  <select id="inv-action-type" class="form-input">
+                    <option value="add">Add Stock (+)</option>
+                    <option value="remove">Remove Stock (-)</option>
+                    <option value="adjust">Stock Adjustment</option>
+                    <option value="damaged">Mark Damaged</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="inv-qty">Quantity</label>
+                  <div class="input-action-group">
+                    <input type="number" id="inv-qty" class="form-input" min="1" value="10">
+                    <button class="btn btn-success" id="btn-apply-inventory">Apply</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="content-card margin-top">
+              <h3>Inventory History Log</h3>
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Date & Time</th>
+                    <th>Product</th>
+                    <th>Operation</th>
+                    <th>Quantity Change</th>
+                    <th>New Stock Level</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-inventory-history"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- SUBTAB: CATEGORIES -->
+          <div id="subtab-admin-categories" class="subtab-view">
+            <div class="view-header">
+              <h2 class="section-title">Category Management</h2>
+              <div class="inline-form">
+                <input type="text" id="new-category-name" class="form-input" placeholder="Category Name">
+                <button class="btn btn-primary" id="btn-add-category">Add Category</button>
+              </div>
+            </div>
+            <div class="content-card">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Category Name</th>
+                    <th>Products Count</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-categories-table"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- SUBTAB: SUPPLIERS -->
+          <div id="subtab-admin-suppliers" class="subtab-view">
+            <div class="view-header">
+              <h2 class="section-title">Supplier Profiles</h2>
+              <button class="btn btn-primary" id="btn-show-add-supplier"><i class="fa-solid fa-plus"></i> Add Supplier</button>
+            </div>
+            <div class="content-card">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Supplier Name</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Address</th>
+                    <th>Purchase History</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-suppliers-table"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- SUBTAB: CUSTOMERS -->
+          <div id="subtab-admin-customers" class="subtab-view">
+            <div class="view-header">
+              <h2 class="section-title">Customer Loyalty & Membership</h2>
+              <button class="btn btn-primary" id="btn-show-add-customer"><i class="fa-solid fa-user-plus"></i> Add Member</button>
+            </div>
+            <div class="content-card">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Customer Name</th>
+                    <th>Phone</th>
+                    <th>Membership No.</th>
+                    <th>Loyalty Points</th>
+                    <th>Total Spending</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-customers-table"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- SUBTAB: EMPLOYEES -->
+          <div id="subtab-admin-employees" class="subtab-view">
+            <h2 class="section-title">Employee Roles & Permissions</h2>
+            <div class="content-card">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Permissions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-employees-table"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- SUBTAB: REPORTS -->
+          <div id="subtab-admin-reports" class="subtab-view">
+            <h2 class="section-title">Business Analytics Reports</h2>
+            <div class="metrics-grid">
+              <div class="metric-card small">
+                <h3>Total Expenses</h3>
+                <p id="report-expenses">$0.00</p>
+              </div>
+              <div class="metric-card small">
+                <h3>Total Taxes Collected</h3>
+                <p id="report-tax">$0.00</p>
+              </div>
+              <div class="metric-card small">
+                <h3>Refunds Processed</h3>
+                <p id="report-refunds">$0.00</p>
+              </div>
+              <div class="metric-card small">
+                <h3>Net Profit</h3>
+                <p id="report-net-profit">$0.00</p>
+              </div>
+            </div>
+
+            <div class="dashboard-details margin-top">
+              <div class="details-left">
+                <div class="content-card">
+                  <h3>Daily Sales Report</h3>
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Transactions</th>
+                        <th>Revenue</th>
+                        <th>Profit</th>
+                      </tr>
+                    </thead>
+                    <tbody id="reports-sales-table"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="details-right">
+                <div class="content-card">
+                  <h3>Slow Selling Products</h3>
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>Current Stock</th>
+                        <th>Qty Sold</th>
+                      </tr>
+                    </thead>
+                    <tbody id="reports-slow-selling"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUBTAB: SETTINGS -->
+          <div id="subtab-admin-settings" class="subtab-view">
+            <h2 class="section-title">System Settings</h2>
+            <div class="content-card">
+              <form id="form-settings">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="set-store-name">Store Name</label>
+                    <input type="text" id="set-store-name" class="form-input" value="StoreFront Pro">
+                  </div>
+                  <div class="form-group">
+                    <label for="set-tax-rate">Default Tax Rate (%)</label>
+                    <input type="number" id="set-tax-rate" class="form-input" value="10">
+                  </div>
+                  <div class="form-group">
+                    <label for="set-currency">Currency Symbol</label>
+                    <input type="text" id="set-currency" class="form-input" value="$">
+                  </div>
+                </div>
+                <div class="form-group margin-top">
+                  <button type="button" class="btn btn-primary" id="btn-save-settings">Save Configurations</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="system-logs-panel">
+    <div class="logs-header">
+      <h3><i class="fa-solid fa-terminal"></i> Live Cloud Database Logs</h3>
+      <button class="btn-text" id="btn-clear-logs">Clear Logs</button>
+    </div>
+    <div class="logs-console" id="system-logs-console"></div>
+  </footer>
+
+  <!-- MODAL: ADD PRODUCT -->
+  <div class="modal-overlay" id="modal-add-product">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Add New Product</h3>
+        <button class="modal-close" id="btn-close-product-modal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="form-new-product">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="prod-name">Product Name *</label>
+              <input type="text" id="prod-name" class="form-input" required placeholder="e.g. Coca-Cola 330ml">
+            </div>
+            <div class="form-group">
+              <label for="prod-category">Category *</label>
+              <select id="prod-category" class="form-input" required></select>
+            </div>
+            <div class="form-group">
+              <label for="prod-brand">Brand</label>
+              <input type="text" id="prod-brand" class="form-input" placeholder="e.g. Coca-Cola Company">
+            </div>
+            <div class="form-group">
+              <label for="prod-supplier">Supplier</label>
+              <select id="prod-supplier" class="form-input"></select>
+            </div>
+            <div class="form-group">
+              <label for="prod-cost">Cost Price ($) *</label>
+              <input type="number" id="prod-cost" class="form-input" step="0.01" min="0" required placeholder="0.80">
+            </div>
+            <div class="form-group">
+              <label for="prod-selling">Selling Price ($) *</label>
+              <input type="number" id="prod-selling" class="form-input" step="0.01" min="0" required placeholder="1.50">
+            </div>
+            <div class="form-group">
+              <label for="prod-tax">Tax (%)</label>
+              <input type="number" id="prod-tax" class="form-input" value="10">
+            </div>
+            <div class="form-group">
+              <label for="prod-discount">Discount (%)</label>
+              <input type="number" id="prod-discount" class="form-input" value="0">
+            </div>
+            <div class="form-group">
+              <label for="prod-unit">Unit</label>
+              <input type="text" id="prod-unit" class="form-input" value="Can" placeholder="e.g. Bottle, Pack, Box">
+            </div>
+            <div class="form-group">
+              <label for="prod-stock">Stock Quantity *</label>
+              <input type="number" id="prod-stock" class="form-input" required min="0" value="100">
+            </div>
+            <div class="form-group form-span-2">
+              <label for="prod-image">Product Image URL</label>
+              <input type="text" id="prod-image" class="form-input" placeholder="Image URL (or blank for default)">
+            </div>
+            <div class="form-group form-span-2">
+              <label for="prod-description">Description</label>
+              <textarea id="prod-description" class="form-input" placeholder="Enter product details..."></textarea>
+            </div>
+          </div>
+
+          <div class="barcode-select-section margin-top">
+            <h4>Barcode Registration</h4>
+            <div class="form-grid">
+              <div class="form-group form-span-2">
+                <div class="flex-row gap-medium">
+                  <label><input type="radio" name="barcode-method" value="scan" checked> Option 1: Scan / Enter Existing Barcode</label>
+                  <label><input type="radio" name="barcode-method" value="generate"> Option 2: Auto-Generate Unique Barcode</label>
+                </div>
+              </div>
+              <div class="form-group form-span-2" id="barcode-input-container">
+                <label for="prod-barcode">Existing Barcode / QR Code</label>
+                <input type="text" id="prod-barcode" class="form-input" placeholder="Scan or enter numbers (e.g., 8851959134012)">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group margin-top text-right">
+            <button type="submit" class="btn btn-success">Save Product</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="../shared/app.js"></script>
+  <script>
+    let isAdminAuthenticated = false;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initAdminNav();
+      initForms();
+
+      // Login form handler
+      const loginForm = document.getElementById('form-admin-login');
+      loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('login-email').value.trim();
+        const pass = document.getElementById('login-password').value.trim();
+        const errorMsg = document.getElementById('login-error-msg');
+
+        const matchedEmployee = db.employees.find(emp => emp.email === email && emp.password === pass);
+
+        if (matchedEmployee && (matchedEmployee.role === 'Super Admin' || matchedEmployee.role === 'Manager')) {
+          isAdminAuthenticated = true;
+          errorMsg.classList.add('hidden');
+          document.getElementById('admin-login-screen').classList.add('hidden');
+          document.getElementById('admin-main-layout').classList.remove('hidden');
+          logConsole(`Admin login successful: ${matchedEmployee.name} (${matchedEmployee.role})`, 'success');
+          updatePageViews();
+        } else {
+          errorMsg.classList.remove('hidden');
+          logConsole('Admin authentication failed. Invalid database credentials.', 'error');
+        }
+      });
+
+      // Standard init
+      updatePageViews();
+      logConsole('Admin portal ready.', 'info');
+    });
+
+    function initAdminNav() {
+      const menuItems = document.querySelectorAll('.menu-item');
+      menuItems.forEach(item => {
+        item.addEventListener('click', () => {
+          menuItems.forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+
+          const targetSubtab = item.getAttribute('data-subtab');
+          document.querySelectorAll('.subtab-view').forEach(view => {
+            view.classList.remove('active');
+          });
+          document.getElementById(`subtab-${targetSubtab}`).classList.add('active');
+        });
+      });
+    }
+
+    function initForms() {
+      // Modal product controllers
+      const addProdModal = document.getElementById('modal-add-product');
+      const btnShowAddProduct = document.getElementById('btn-show-add-product');
+      const btnCloseProductModal = document.getElementById('btn-close-product-modal');
+
+      if(btnShowAddProduct) {
+        btnShowAddProduct.addEventListener('click', () => addProdModal.classList.add('active'));
+      }
+      if(btnCloseProductModal) {
+        btnCloseProductModal.addEventListener('click', () => addProdModal.classList.remove('active'));
+      }
+
+      // Barcode method radio toggles
+      const radios = document.getElementsByName('barcode-method');
+      const barcodeContainer = document.getElementById('barcode-input-container');
+      radios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          barcodeContainer.style.display = e.target.value === 'generate' ? 'none' : 'block';
+        });
+      });
+
+      // Submit product
+      document.getElementById('form-new-product').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('prod-name').value;
+        const category = document.getElementById('prod-category').value;
+        const brand = document.getElementById('prod-brand').value;
+        const supplier = document.getElementById('prod-supplier').value;
+        const cost = parseFloat(document.getElementById('prod-cost').value);
+        const selling = parseFloat(document.getElementById('prod-selling').value);
+        const tax = parseInt(document.getElementById('prod-tax').value) || 10;
+        const discount = parseInt(document.getElementById('prod-discount').value) || 0;
+        const unit = document.getElementById('prod-unit').value || 'Pcs';
+        const stock = parseInt(document.getElementById('prod-stock').value);
+        const image = document.getElementById('prod-image').value || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=100&auto=format&fit=crop&q=60';
+        const description = document.getElementById('prod-description').value;
+
+        let barcode = '';
+        const barcodeMethod = document.querySelector('input[name="barcode-method"]:checked').value;
+        if (barcodeMethod === 'generate') {
+          barcode = `POS${Math.floor(100000000 + Math.random() * 900000000)}`;
+        } else {
+          barcode = document.getElementById('prod-barcode').value || `POS${Date.now()}`;
+        }
+
+        const newProduct = {
+          id: (db.products.length + 1).toString(),
+          name, category, brand, supplier, cost, selling, tax, discount, unit, stock, barcode, image, description
+        };
+
+        db.products.push(newProduct);
+        db.inventoryHistory.unshift({
+          date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          product: name,
+          action: 'Initial Product Upload',
+          qtyChange: `+${stock}`,
+          newStock: stock
+        });
+
+        logConsole(`New product registered: ${name}`, 'success');
+        saveDB();
+        document.getElementById('form-new-product').reset();
+        addProdModal.classList.remove('active');
+      });
+
+      // Apply inventory adjustment
+      document.getElementById('btn-apply-inventory').addEventListener('click', () => {
+        const prodId = document.getElementById('inv-select-product').value;
+        const op = document.getElementById('inv-action-type').value;
+        const qty = parseInt(document.getElementById('inv-qty').value);
+
+        const product = db.products.find(p => p.id === prodId);
+        if (!product) return;
+
+        let qtyChangeStr = '';
+        if (op === 'add') { product.stock += qty; qtyChangeStr = `+${qty}`; }
+        else if (op === 'remove' || op === 'damaged') { product.stock = Math.max(0, product.stock - qty); qtyChangeStr = `-${qty}`; }
+        else if (op === 'adjust') {
+          const diff = qty - product.stock;
+          product.stock = qty;
+          qtyChangeStr = diff >= 0 ? `+${diff}` : `${diff}`;
+        }
+
+        db.inventoryHistory.unshift({
+          date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          product: product.name,
+          action: op.charAt(0).toUpperCase() + op.slice(1),
+          qtyChange: qtyChangeStr,
+          newStock: product.stock
+        });
+
+        logConsole(`Inventory adjusted: ${product.name} stock set to ${product.stock}`, 'info');
+        saveDB();
+      });
+
+      // Category Add
+      document.getElementById('btn-add-category').addEventListener('click', () => {
+        const name = document.getElementById('new-category-name').value.trim();
+        if (!name) return;
+        if (db.categories.includes(name)) return;
+        db.categories.push(name);
+        document.getElementById('new-category-name').value = '';
+        logConsole(`New category created: ${name}`, 'success');
+        saveDB();
+      });
+
+      // Settings save
+      document.getElementById('btn-save-settings').addEventListener('click', () => {
+        db.settings.storeName = document.getElementById('set-store-name').value;
+        db.settings.taxRate = parseFloat(document.getElementById('set-tax-rate').value) || 10;
+        db.settings.currency = document.getElementById('set-currency').value;
+        logConsole('Settings saved successfully.', 'success');
+        saveDB();
+      });
+
+      document.getElementById('btn-clear-logs').addEventListener('click', () => {
+        document.getElementById('system-logs-console').innerHTML = '';
+      });
+    }
+
+    function deleteProduct(id) {
+      const idx = db.products.findIndex(p => p.id === id);
+      if (idx !== -1) {
+        logConsole(`Product deleted: ${db.products[idx].name}`, 'warning');
+        db.products.splice(idx, 1);
+        saveDB();
+      }
+    }
+
+    function deleteCategory(cat) {
+      const idx = db.categories.indexOf(cat);
+      if (idx !== -1) {
+        db.categories.splice(idx, 1);
+        logConsole(`Category deleted: ${cat}`, 'warning');
+        saveDB();
+      }
+    }
+
+    // UPDATE ALL PAGE VIEWS CONTROLLER
+    function updatePageViews() {
+      document.getElementById('store-display-name').innerText = db.settings.storeName;
+
+      // Stats calculations
+      const totalRev = db.sales.reduce((acc, s) => acc + s.total, 0);
+      const totalProfit = db.sales.reduce((acc, s) => acc + s.profit, 0);
+      const totalOrders = db.sales.length;
+      const totalProducts = db.products.length;
+      const lowStockCount = db.products.filter(p => p.stock <= 10 && p.stock > 0).length;
+
+      document.getElementById('stat-today-sales').innerText = totalOrders;
+      document.getElementById('stat-today-revenue').innerText = `${db.settings.currency}${totalRev.toFixed(2)}`;
+      document.getElementById('stat-today-profit').innerText = `${db.settings.currency}${totalProfit.toFixed(2)}`;
+      document.getElementById('stat-total-products').innerText = totalProducts;
+      document.getElementById('stat-low-stock').innerText = lowStockCount;
+
+      // Top Selling list
+      document.getElementById('dashboard-top-selling').innerHTML = db.products.slice(0, 3).map(p => `
+        <tr>
+          <td>${p.name}</td>
+          <td>${db.settings.currency}${p.selling.toFixed(2)}</td>
+          <td>12</td>
+          <td>${db.settings.currency}${(p.selling * 12).toFixed(2)}</td>
+        </tr>
+      `).join('');
+
+      // Recent Transactions
+      document.getElementById('dashboard-recent-tx').innerHTML = db.sales.map(s => `
+        <div class="timeline-item">
+          <div class="timeline-info">
+            <h4>Order #${s.txNumber}</h4>
+            <span>${s.date} via ${s.method}</span>
+          </div>
+          <div class="timeline-amount">${db.settings.currency}${s.total.toFixed(2)}</div>
+        </div>
+      `).join('');
+
+      // Tables
+      document.getElementById('admin-products-table').innerHTML = db.products.map(p => {
+        const stockBadge = p.stock === 0 ? 'badge-danger' : (p.stock <= 10 ? 'badge-warning' : 'badge-success');
+        return `
+          <tr>
+            <td><div class="table-thumbnail">${p.image ? `<img src="${p.image}">` : '<i class="fa-solid fa-box"></i>'}</div></td>
+            <td><strong>${p.name}</strong></td>
+            <td>${p.category}</td>
+            <td><code>${p.barcode}</code></td>
+            <td>${db.settings.currency}${p.cost.toFixed(2)}</td>
+            <td>${db.settings.currency}${p.selling.toFixed(2)}</td>
+            <td><span class="badge ${stockBadge}">${p.stock} ${p.unit}</span></td>
+            <td><button class="btn btn-outline btn-text text-danger" onclick="deleteProduct('${p.id}')">Delete</button></td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('admin-inventory-history').innerHTML = db.inventoryHistory.map(h => `
+        <tr>
+          <td>${h.date}</td>
+          <td><strong>${h.product}</strong></td>
+          <td>${h.action}</td>
+          <td><span class="${h.qtyChange.startsWith('+') ? 'text-success' : 'text-danger'}">${h.qtyChange}</span></td>
+          <td>${h.newStock}</td>
+        </tr>
+      `).join('');
+
+      document.getElementById('admin-categories-table').innerHTML = db.categories.map((c, idx) => {
+        const count = db.products.filter(p => p.category === c).length;
+        return `
+          <tr>
+            <td>${idx + 1}</td>
+            <td><strong>${c}</strong></td>
+            <td>${count} items</td>
+            <td><button class="btn btn-outline btn-text text-danger" onclick="deleteCategory('${c}')" ${count > 0 ? 'disabled' : ''}>Delete</button></td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('admin-suppliers-table').innerHTML = db.suppliers.map(s => `
+        <tr>
+          <td><strong>${s.name}</strong></td>
+          <td>${s.phone}</td>
+          <td>${s.email}</td>
+          <td>${s.address}</td>
+          <td>${s.history}</td>
+        </tr>
+      `).join('');
+
+      document.getElementById('admin-customers-table').innerHTML = db.customers.map(c => `
+        <tr>
+          <td><strong>${c.name}</strong></td>
+          <td>${c.phone}</td>
+          <td><code>${c.cardNo}</code></td>
+          <td><span class="badge badge-success">${c.points} Points</span></td>
+          <td>${db.settings.currency}${c.spending.toFixed(2)}</td>
+        </tr>
+      `).join('');
+
+      document.getElementById('admin-employees-table').innerHTML = db.employees.map(e => `
+        <tr>
+          <td><strong>${e.name}</strong></td>
+          <td><span class="badge badge-neutral">${e.role}</span></td>
+          <td><small>${e.permissions}</small></td>
+        </tr>
+      `).join('');
+
+      // Reports summary
+      const totalCost = db.products.reduce((acc, p) => acc + (p.cost * p.stock), 0);
+      document.getElementById('report-expenses').innerText = `${db.settings.currency}${totalCost.toFixed(2)}`;
+      document.getElementById('report-tax').innerText = `${db.settings.currency}${(totalRev * 0.1).toFixed(2)}`;
+      document.getElementById('report-refunds').innerText = `${db.settings.currency}0.00`;
+      document.getElementById('report-net-profit').innerText = `${db.settings.currency}${totalProfit.toFixed(2)}`;
+
+      document.getElementById('reports-sales-table').innerHTML = `
+        <tr>
+          <td>Today (${new Date().toLocaleDateString()})</td>
+          <td>${db.sales.length}</td>
+          <td>${db.settings.currency}${totalRev.toFixed(2)}</td>
+          <td>${db.settings.currency}${totalProfit.toFixed(2)}</td>
+        </tr>
+      `;
+
+      document.getElementById('reports-slow-selling').innerHTML = db.products.slice(2, 4).map(p => `
+        <tr>
+          <td>${p.name}</td>
+          <td>${p.stock}</td>
+          <td>0</td>
+        </tr>
+      `).join('');
+
+      // Dropdown lists
+      const pCat = document.getElementById('prod-category');
+      if (pCat) pCat.innerHTML = db.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+      const pSup = document.getElementById('prod-supplier');
+      if (pSup) pSup.innerHTML = '<option value="">Select Supplier</option>' + db.suppliers.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+      const invSel = document.getElementById('inv-select-product');
+      if (invSel) invSel.innerHTML = db.products.map(p => `<option value="${p.id}">${p.name} (Stock: ${p.stock})</option>`).join('');
+    }
+  </script>
+</body>
+</html>

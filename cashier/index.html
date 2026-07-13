@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cashier POS operator Terminal</title>
+  <link rel="stylesheet" href="../shared/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <header class="system-header">
+    <div class="logo-area">
+      <div class="logo-icon"><i class="fa-solid fa-cash-register"></i></div>
+      <div class="logo-text">
+        <h1 id="store-display-name">StoreFront Pro</h1>
+        <span>Cashier Checkout Station</span>
+      </div>
+    </div>
+    <div class="db-status">
+      <span class="status-indicator online"></span>
+      <span class="status-text">Cloud Database: Connected</span>
+    </div>
+  </header>
+
+  <main class="system-content">
+    <section id="view-pos" class="tab-view active">
+      <div class="pos-layout cashier-mode">
+        <header class="pos-header">
+          <button class="btn btn-outline" id="btn-change-customer"><i class="fa-solid fa-user-plus"></i> Member Loyalty</button>
+          <div class="pos-member-tag" id="active-customer-tag">
+            <i class="fa-solid fa-address-card"></i> <span>Walk-in Customer</span>
+          </div>
+        </header>
+
+        <div class="pos-main">
+          <!-- Scan Simulator and Quick Keys -->
+          <div class="pos-left-panel">
+            <div class="content-card pos-scan-simulator">
+              <div class="card-header">
+                <h3>Barcode Scanning</h3>
+              </div>
+              <div class="card-body">
+                <div class="scan-input-area" id="scan-area-barcode">
+                  <div class="input-action-group">
+                    <input type="text" id="input-barcode-scan" class="form-input" placeholder="Scan barcode or type code...">
+                    <button class="btn btn-primary" id="btn-trigger-barcode-scan">Scan</button>
+                  </div>
+                  <small class="help-text">Try scanning: <strong>8851959134012</strong> (Coke) or <strong>POS0000000125</strong> (Headphones)</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Last Scanned Display -->
+            <div class="content-card last-scanned-card" id="last-scanned-container">
+              <div class="card-body scan-display-grid">
+                <div class="scan-display-img-placeholder" id="scan-display-image">
+                  <i class="fa-solid fa-box-open"></i>
+                </div>
+                <div class="scan-display-details">
+                  <h4 id="scan-display-name">Ready for scanning...</h4>
+                  <p class="scan-display-price">Price: <span id="scan-display-price">$0.00</span></p>
+                  <p class="scan-display-stock">Available Stock: <span id="scan-display-stock">0</span></p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick click items for cashiers -->
+            <div class="content-card pos-quick-select">
+              <div class="card-header">
+                <h3>Cashier Quick Select Products</h3>
+              </div>
+              <div class="card-body flex-wrap-container" id="pos-quick-products"></div>
+            </div>
+          </div>
+
+          <!-- Cart side -->
+          <div class="pos-right-panel">
+            <div class="pos-cart-card">
+              <div class="cart-header">
+                <h2>Shopping Cart</h2>
+                <button class="btn-text text-danger" id="btn-cancel-transaction">Cancel</button>
+              </div>
+
+              <div class="cart-items" id="pos-cart-items">
+                <div class="cart-empty-state">
+                  <i class="fa-solid fa-basket-shopping"></i>
+                  <p>Cart is empty. Scan items to checkout.</p>
+                </div>
+              </div>
+
+              <div class="cart-summary">
+                <div class="summary-line">
+                  <span>Subtotal</span>
+                  <span id="cart-subtotal">$0.00</span>
+                </div>
+                <div class="summary-line">
+                  <span>Discount</span>
+                  <span id="cart-discount">-$0.00</span>
+                </div>
+                <div class="summary-line">
+                  <span>Tax (<span id="cart-tax-rate">10</span>%)</span>
+                  <span id="cart-tax">$0.00</span>
+                </div>
+                <hr>
+                <div class="summary-line total">
+                  <span>Total Amount</span>
+                  <span id="cart-total">$0.00</span>
+                </div>
+                <button class="btn btn-primary btn-block btn-lg margin-top" id="btn-pay-now" disabled>
+                  <i class="fa-solid fa-credit-card"></i> Proceed to Payment
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="system-logs-panel">
+    <div class="logs-header">
+      <h3><i class="fa-solid fa-terminal"></i> Cashier Terminal Sync logs</h3>
+      <button class="btn-text" id="btn-clear-logs">Clear Logs</button>
+    </div>
+    <div class="logs-console" id="system-logs-console"></div>
+  </footer>
+
+  <!-- MODAL: ASSOCIATE CUSTOMER -->
+  <div class="modal-overlay" id="modal-select-customer">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Associate Loyalty Customer</h3>
+        <button class="modal-close" id="btn-close-customer-modal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <ul class="customer-selection-list" id="pos-customer-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PAYMENT GATEWAY -->
+  <div class="modal-overlay" id="modal-payment-gateway">
+    <div class="modal-card max-width-md">
+      <div class="modal-header">
+        <h3>Secure Payment Processing</h3>
+        <button class="modal-close" id="btn-close-payment-modal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body center-text">
+        <div id="payment-gate-selection">
+          <p class="payment-amount-prompt">Select Payment Method: <strong><span class="pay-modal-total">$0.00</span></strong></p>
+          <div class="payment-methods-grid">
+            <button class="pay-method-btn" data-pay="Cash"><i class="fa-solid fa-money-bill-wave"></i> Cash</button>
+            <button class="pay-method-btn" data-pay="Credit Card"><i class="fa-solid fa-credit-card"></i> Credit Card</button>
+            <button class="pay-method-btn" data-pay="Debit Card"><i class="fa-solid fa-credit-card"></i> Debit Card</button>
+            <button class="pay-method-btn" data-pay="Visa"><i class="fa-brands fa-cc-visa"></i> Visa</button>
+            <button class="pay-method-btn" data-pay="Mastercard"><i class="fa-brands fa-cc-mastercard"></i> Mastercard</button>
+            <button class="pay-method-btn" data-pay="KHQR"><i class="fa-solid fa-qrcode"></i> KHQR</button>
+            <button class="pay-method-btn" data-pay="Apple Pay"><i class="fa-brands fa-apple-pay"></i> Apple Pay</button>
+            <button class="pay-method-btn" data-pay="Google Pay"><i class="fa-brands fa-google-pay"></i> Google Pay</button>
+            <button class="pay-method-btn" data-pay="NFC"><i class="fa-solid fa-nfc-symbol"></i> Contactless NFC</button>
+          </div>
+          <div class="form-group margin-top border-top padding-top">
+            <label for="simulation-outcome">Gateway Outcome:</label>
+            <select id="simulation-outcome" class="form-input inline-select">
+              <option value="success">Always Approved (Success)</option>
+              <option value="fail">Declined/Unpaid (Failure)</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="payment-gate-processing" class="hidden">
+          <div class="spinner"></div>
+          <h4 class="margin-top">Contacting Payment Gateway Securely...</h4>
+        </div>
+
+        <div id="payment-gate-success" class="hidden">
+          <div class="success-icon-animation"><i class="fa-solid fa-circle-check"></i></div>
+          <h3 class="status-success margin-top">Payment Approved!</h3>
+          <div class="receipt-options-box margin-top">
+            <h4>Select Receipt Delivery</h4>
+            <div class="receipt-btns">
+              <button class="btn btn-outline" data-receipt="print"><i class="fa-solid fa-print"></i> Print</button>
+              <button class="btn btn-outline" data-receipt="email"><i class="fa-solid fa-envelope"></i> Email</button>
+              <button class="btn btn-outline" data-receipt="sms"><i class="fa-solid fa-sms"></i> SMS</button>
+              <button class="btn btn-outline" data-receipt="qr"><i class="fa-solid fa-qrcode"></i> QR</button>
+              <button class="btn btn-outline" data-receipt="none"><i class="fa-solid fa-ban"></i> No Receipt</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="payment-gate-failed" class="hidden">
+          <div class="failed-icon-animation"><i class="fa-solid fa-circle-xmark"></i></div>
+          <h3 class="status-failed margin-top">Payment Failed!</h3>
+          <div class="btn-group margin-top center-align">
+            <button class="btn btn-primary" id="btn-pay-try-again">Try Again</button>
+            <button class="btn btn-outline" id="btn-pay-change-method">Choose Another</button>
+            <button class="btn btn-danger" id="btn-pay-cancel-tx">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: RECEIPT -->
+  <div class="modal-overlay" id="modal-view-receipt">
+    <div class="modal-card max-width-sm receipt-modal-layout">
+      <div class="modal-header">
+        <h3>Cashier Transaction Receipt</h3>
+        <button class="modal-close" id="btn-close-receipt-modal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="paper-receipt" id="paper-receipt-content"></div>
+        <div class="margin-top text-center" id="receipt-success-actions">
+          <button class="btn btn-success btn-block" id="btn-complete-exit-flow">Done & Head to Exit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../shared/app.js"></script>
+  <script>
+    let currentCart = [];
+    let selectedCustomer = null;
+    let activePaymentTotal = 0;
+    let lastSelectedMethod = '';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initPOSScanners();
+      initCartActions();
+      updatePageViews();
+      logConsole('Cashier Operator terminal ready.', 'info');
+    });
+
+    function initPOSScanners() {
+      document.getElementById('btn-trigger-barcode-scan').onclick = () => {
+        const val = document.getElementById('input-barcode-scan').value.trim();
+        if (val) triggerScan(val);
+        document.getElementById('input-barcode-scan').value = '';
+      };
+      document.getElementById('input-barcode-scan').onkeypress = (e) => {
+        if (e.key === 'Enter') {
+          const val = e.target.value.trim();
+          if (val) triggerScan(val);
+          e.target.value = '';
+        }
+      };
+
+      // Customer association modal
+      const loyaltyBtn = document.getElementById('btn-change-customer');
+      const loyaltyModal = document.getElementById('modal-select-customer');
+      loyaltyBtn.onclick = () => {
+        renderCustomerSelectionList();
+        loyaltyModal.classList.add('active');
+      };
+      document.getElementById('btn-close-customer-modal').onclick = () => loyaltyModal.classList.remove('active');
+    }
+
+    function triggerScan(barcode) {
+      const product = db.products.find(p => p.barcode === barcode);
+      if (!product) {
+        alert('Product not found!');
+        return;
+      }
+
+      document.getElementById('scan-display-image').innerHTML = product.image ? `<img src="${product.image}">` : '<i class="fa-solid fa-box"></i>';
+      document.getElementById('scan-display-name').innerText = product.name;
+      document.getElementById('scan-display-price').innerText = `${db.settings.currency}${product.selling.toFixed(2)}`;
+      document.getElementById('scan-display-stock').innerText = product.stock;
+
+      const existing = currentCart.find(item => item.product.id === product.id);
+      if (existing) {
+        if (existing.quantity >= product.stock) {
+          alert('Stock limit reached.');
+          return;
+        }
+        existing.quantity++;
+      } else {
+        if (product.stock <= 0) {
+          alert('Item is currently out of stock.');
+          return;
+        }
+        currentCart.push({ product, quantity: 1 });
+      }
+
+      logConsole(`Cashier scanned item: ${product.name} (Qty: ${existing ? existing.quantity : 1})`, 'info');
+      renderCart();
+    }
+
+    function renderCart() {
+      const cartBody = document.getElementById('pos-cart-items');
+      const payBtn = document.getElementById('btn-pay-now');
+
+      if (currentCart.length === 0) {
+        cartBody.innerHTML = `
+          <div class="cart-empty-state">
+            <i class="fa-solid fa-basket-shopping"></i>
+            <p>Cart is empty. Scan items to checkout.</p>
+          </div>
+        `;
+        payBtn.disabled = true;
+        updateTotals(0, 0, 0, 0);
+        return;
+      }
+
+      payBtn.disabled = false;
+      let subtotal = 0, discount = 0, tax = 0;
+
+      cartBody.innerHTML = currentCart.map((item, idx) => {
+        const p = item.product;
+        const sub = p.selling * item.quantity;
+        const disc = sub * (p.discount / 100);
+        subtotal += sub;
+        discount += disc;
+
+        return `
+          <div class="cart-item">
+            <div class="cart-item-img">${p.image ? `<img src="${p.image}">` : '<i class="fa-solid fa-box"></i>'}</div>
+            <div class="cart-item-details">
+              <h4>${p.name}</h4>
+              <div class="cart-item-price-calc">${db.settings.currency}${p.selling.toFixed(2)} x ${item.quantity}</div>
+            </div>
+            <div class="cart-item-controls">
+              <button class="cart-qty-btn" onclick="adjustQty(${idx}, -1)">-</button>
+              <span class="cart-item-qty">${item.quantity}</span>
+              <button class="cart-qty-btn" onclick="adjustQty(${idx}, 1)">+</button>
+            </div>
+            <button class="cart-item-remove" onclick="removeItem(${idx})"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+        `;
+      }).join('');
+
+      tax = (subtotal - discount) * (db.settings.taxRate / 100);
+      const total = (subtotal - discount) + tax;
+      updateTotals(subtotal, discount, tax, total);
+    }
+
+    function adjustQty(idx, amt) {
+      const item = currentCart[idx];
+      const newQty = item.quantity + amt;
+      if (newQty <= 0) { removeItem(idx); return; }
+      if (newQty > item.product.stock) { alert('Exceeds stock!'); return; }
+      item.quantity = newQty;
+      renderCart();
+    }
+
+    function removeItem(idx) {
+      currentCart.splice(idx, 1);
+      renderCart();
+    }
+
+    function updateTotals(sub, disc, tax, tot) {
+      document.getElementById('cart-subtotal').innerText = `${db.settings.currency}${sub.toFixed(2)}`;
+      document.getElementById('cart-discount').innerText = `-${db.settings.currency}${disc.toFixed(2)}`;
+      document.getElementById('cart-tax').innerText = `${db.settings.currency}${tax.toFixed(2)}`;
+      document.getElementById('cart-total').innerText = `${db.settings.currency}${tot.toFixed(2)}`;
+      activePaymentTotal = tot;
+    }
+
+    function initCartActions() {
+      document.getElementById('btn-cancel-transaction').onclick = () => {
+        if (currentCart.length === 0) return;
+        if (confirm('Void transaction?')) { resetCart(); }
+      };
+
+      const payBtn = document.getElementById('btn-pay-now');
+      const payModal = document.getElementById('modal-payment-gateway');
+      const closePayModal = document.getElementById('btn-close-payment-modal');
+
+      payBtn.onclick = () => {
+        document.querySelectorAll('.pay-modal-total').forEach(el => el.innerText = `${db.settings.currency}${activePaymentTotal.toFixed(2)}`);
+        document.getElementById('payment-gate-selection').classList.remove('hidden');
+        document.getElementById('payment-gate-processing').classList.add('hidden');
+        document.getElementById('payment-gate-success').classList.add('hidden');
+        document.getElementById('payment-gate-failed').classList.add('hidden');
+        payModal.classList.add('active');
+      };
+
+      closePayModal.onclick = () => payModal.classList.remove('active');
+
+      document.querySelectorAll('.pay-method-btn').forEach(btn => {
+        btn.onclick = () => {
+          const method = btn.innerText.trim();
+          lastSelectedMethod = method;
+          document.getElementById('payment-gate-selection').classList.add('hidden');
+          document.getElementById('payment-gate-processing').classList.remove('hidden');
+
+          setTimeout(() => {
+            const outcome = document.getElementById('simulation-outcome').value;
+            document.getElementById('payment-gate-processing').classList.add('hidden');
+
+            if (outcome === 'success') {
+              document.getElementById('payment-gate-success').classList.remove('hidden');
+              const txNumber = 'TX-' + Math.floor(10000 + Math.random() * 90000);
+              const dateStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
+              let costPrice = 0;
+
+              currentCart.forEach(item => {
+                const prod = db.products.find(p => p.id === item.product.id);
+                if (prod) {
+                  prod.stock -= item.quantity;
+                  costPrice += prod.cost * item.quantity;
+                  db.inventoryHistory.unshift({
+                    date: dateStr,
+                    product: prod.name,
+                    action: `Cashier Sale #${txNumber}`,
+                    qtyChange: `-${item.quantity}`,
+                    newStock: prod.stock
+                  });
+                }
+              });
+
+              const netProfit = activePaymentTotal - costPrice;
+              db.sales.unshift({
+                txNumber, date: dateStr, total: activePaymentTotal, profit: netProfit, method, itemsCount: currentCart.length, customer: selectedCustomer ? selectedCustomer.name : 'Walk-in'
+              });
+
+              if (selectedCustomer) {
+                const dbCust = db.customers.find(c => c.cardNo === selectedCustomer.cardNo);
+                if (dbCust) {
+                  dbCust.points += Math.floor(activePaymentTotal);
+                  dbCust.spending += activePaymentTotal;
+                }
+              }
+
+              localStorage.setItem('gate_clearance_active', 'true');
+              generateReceiptLayout(txNumber, dateStr, method);
+              saveDB();
+            } else {
+              document.getElementById('payment-gate-failed').classList.remove('hidden');
+            }
+          }, 1500);
+        };
+      });
+
+      document.getElementById('btn-pay-try-again').onclick = () => {
+        document.getElementById('payment-gate-failed').classList.add('hidden');
+        document.getElementById('payment-gate-selection').classList.remove('hidden');
+      };
+      document.getElementById('btn-pay-change-method').onclick = () => {
+        document.getElementById('payment-gate-failed').classList.add('hidden');
+        document.getElementById('payment-gate-selection').classList.remove('hidden');
+      };
+      document.getElementById('btn-pay-cancel-tx').onclick = () => {
+        payModal.classList.remove('active');
+        resetCart();
+      };
+
+      document.getElementById('btn-close-receipt-modal').onclick = () => {
+        document.getElementById('modal-view-receipt').classList.remove('active');
+        resetCart();
+      };
+
+      document.getElementById('btn-complete-exit-flow').onclick = () => {
+        document.getElementById('modal-view-receipt').classList.remove('active');
+        resetCart();
+        window.location.href = '../gate/index.html'; // Direct to gate
+      };
+    }
+
+    function renderCustomerSelectionList() {
+      const ul = document.getElementById('pos-customer-list');
+      ul.innerHTML = db.customers.map(c => `
+        <li class="customer-select-item" onclick="selectPOSCustomer('${c.cardNo}')">
+          <div><strong>${c.name}</strong><br><small>${c.phone} | Card: ${c.cardNo}</small></div>
+          <span class="badge badge-success">${c.points} Pts</span>
+        </li>
+      `).join('');
+    }
+
+    function selectPOSCustomer(cardNo) {
+      const customer = db.customers.find(c => c.cardNo === cardNo);
+      if (customer) {
+        selectedCustomer = customer;
+        document.getElementById('active-customer-tag').innerHTML = `<i class="fa-solid fa-award"></i> <span>${customer.name}</span>`;
+        logConsole(`Loyalty member associated: ${customer.name}`, 'info');
+      }
+      document.getElementById('modal-select-customer').classList.remove('active');
+    }
+
+    function resetCart() {
+      currentCart = [];
+      selectedCustomer = null;
+      document.getElementById('active-customer-tag').innerHTML = '<i class="fa-solid fa-address-card"></i> <span>Walk-in Customer</span>';
+      renderCart();
+    }
+
+    function generateReceiptLayout(txNumber, dateStr, method) {
+      const paper = document.getElementById('paper-receipt-content');
+      const currency = db.settings.currency;
+
+      const itemsRows = currentCart.map(item => `
+        <div class="receipt-item-row">
+          <span>${item.product.name} x${item.quantity}</span>
+          <span>${currency}${(item.product.selling * item.quantity).toFixed(2)}</span>
+        </div>
+      `).join('');
+
+      paper.innerHTML = `
+        <div class="center-text">
+          <h3>${db.settings.storeName}</h3>
+          <p>Cashier Checkout Station</p>
+        </div>
+        <hr>
+        <p><strong>Receipt:</strong> ${txNumber}</p>
+        <p><strong>Date:</strong> ${dateStr}</p>
+        <hr>
+        ${itemsRows}
+        <hr>
+        <div class="receipt-item-row" style="font-weight:bold;">
+          <span>TOTAL PAID</span>
+          <span>${currency}${activePaymentTotal.toFixed(2)}</span>
+        </div>
+        <div class="receipt-item-row">
+          <span>Payment Method</span>
+          <span>${method}</span>
+        </div>
+      `;
+
+      document.querySelectorAll('.receipt-btns button').forEach(btn => {
+        btn.onclick = () => {
+          document.getElementById('modal-payment-gateway').classList.remove('active');
+          document.getElementById('modal-view-receipt').classList.add('active');
+        };
+      });
+    }
+
+    function updatePageViews() {
+      document.getElementById('cart-tax-rate').innerText = db.settings.taxRate;
+      document.getElementById('pos-quick-products').innerHTML = db.products.map(p => `
+        <button class="quick-prod-btn" onclick="triggerScan('${p.barcode}')"><i class="fa-solid fa-cart-plus"></i> ${p.name}</button>
+      `).join('');
+    }
+  </script>
+</body>
+</html>
