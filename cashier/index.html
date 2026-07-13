@@ -12,7 +12,32 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
-  <header class="system-header">
+  <!-- LOGIN SCREEN -->
+  <div class="admin-login-container" id="cashier-login-screen">
+    <div class="login-card">
+      <div class="center-text margin-bottom">
+        <div class="logo-icon" style="margin: 0 auto 12px;"><i class="fa-solid fa-cash-register"></i></div>
+        <h2>Cashier Terminal Login</h2>
+        <p class="help-text">Please sign in to open cashier drawer</p>
+      </div>
+      <form id="form-cashier-login">
+        <div class="form-group">
+          <label for="cashier-login-email">Email Address</label>
+          <input type="email" id="cashier-login-email" class="form-input" required placeholder="cashier1@test.com">
+        </div>
+        <div class="form-group margin-top">
+          <label for="cashier-login-password">Password</label>
+          <input type="password" id="cashier-login-password" class="form-input" required placeholder="••••••••">
+        </div>
+        <div class="status-failed margin-top hidden" id="cashier-login-error-msg" style="font-size: 0.8125rem; font-weight: 600; text-align: center;">
+          Invalid Cashier credentials!
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg margin-top">Open Session</button>
+      </form>
+    </div>
+  </div>
+
+  <header class="system-header hidden" id="cashier-main-header">
     <div class="logo-area">
       <div class="logo-icon"><i class="fa-solid fa-cash-register"></i></div>
       <div class="logo-text">
@@ -26,17 +51,13 @@
     </div>
   </header>
 
-  <main class="system-content">
+  <main class="system-content hidden" id="cashier-main-content">
     <section id="view-pos" class="tab-view active">
       <div class="pos-layout cashier-mode">
         <header class="pos-header">
           <div class="pos-mode-selector">
-            <span style="font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); margin-right: 6px;">Terminal:</span>
-            <select id="select-terminal-id" class="form-input" style="width: 100px; display: inline-block; padding: 4px 8px; height: auto; margin: 0; font-size: 0.8125rem;">
-              <option value="POS-1">POS-1</option>
-              <option value="POS-2" selected>POS-2</option>
-              <option value="POS-3">POS-3</option>
-            </select>
+            <span style="font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); margin-right: 6px;">Terminal Profile:</span>
+            <strong id="display-paired-terminal" style="font-size: 0.875rem; color: var(--primary);">POS-1</strong>
           </div>
           <button class="btn btn-outline" id="btn-change-customer"><i class="fa-solid fa-user-plus"></i> Member Loyalty</button>
           <div class="pos-member-tag" id="active-customer-tag">
@@ -239,29 +260,60 @@
     let activePaymentTotal = 0;
     let lastSelectedMethod = '';
 
+    let activeTerminalId = 'POS-1';
+
     document.addEventListener('DOMContentLoaded', () => {
-      initPOSScanners();
       initCartActions();
       updatePageViews();
 
-      // Retrieve previous terminal selection
-      const termSelect = document.getElementById('select-terminal-id');
-      if (localStorage.getItem('cashier_terminal_id')) {
-        termSelect.value = localStorage.getItem('cashier_terminal_id');
-      }
-      logConsole(`Cashier Terminal active on: ${termSelect.value}`, 'info');
+      const loginScreen = document.getElementById('cashier-login-screen');
+      const mainHeader = document.getElementById('cashier-main-header');
+      const mainContent = document.getElementById('cashier-main-content');
+      const displayTerminal = document.getElementById('display-paired-terminal');
 
-      termSelect.onchange = (e) => {
-        localStorage.setItem('cashier_terminal_id', e.target.value);
-        logConsole(`Switched terminal profile to: ${e.target.value}`, 'info');
+      const applyLogin = (user) => {
+        // Derive terminal ID from email (e.g. cashier1@test.com -> POS-1)
+        const numMatch = user.email.match(/\d+/);
+        activeTerminalId = numMatch ? `POS-${numMatch[0]}` : 'POS-1';
+
+        displayTerminal.innerText = activeTerminalId;
+        loginScreen.classList.add('hidden');
+        mainHeader.classList.remove('hidden');
+        mainContent.classList.remove('hidden');
+
+        initPOSScanners();
+        logConsole(`Cashier terminal ${activeTerminalId} opened by ${user.name}`, 'success');
       };
+
+      // Check active session
+      const savedUser = sessionStorage.getItem('current_cashier_user');
+      if (savedUser) {
+        applyLogin(JSON.parse(savedUser));
+      }
+
+      // Handle submit
+      document.getElementById('form-cashier-login').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('cashier-login-email').value.trim();
+        const pass = document.getElementById('cashier-login-password').value.trim();
+        const errMsg = document.getElementById('cashier-login-error-msg');
+
+        const matched = db.employees.find(emp => emp.email === email && emp.password === pass);
+        if (matched) {
+          errMsg.classList.add('hidden');
+          sessionStorage.setItem('current_cashier_user', JSON.stringify(matched));
+          applyLogin(matched);
+        } else {
+          errMsg.classList.remove('hidden');
+        }
+      });
 
       // Listen to remote scan events from phone scanner
       window.addEventListener('storage', (e) => {
         if (e.key === 'remote_scan_event' && e.newValue) {
           try {
             const data = JSON.parse(e.newValue);
-            if (data.target === termSelect.value) {
+            if (data.target === activeTerminalId) {
               triggerScan(data.barcode);
               logConsole(`Remote Scan Applied [${data.target}]: ${data.barcode}`, 'success');
             }

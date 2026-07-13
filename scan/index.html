@@ -132,32 +132,49 @@
     }
   </style>
 </head>
-<body>
-  <div class="scanner-header">
-    <h1><i class="fa-solid fa-mobile-screen"></i> Wireless Phone Scanner</h1>
-    <p style="margin: 0; font-size: 0.8125rem; color: #94a3b8;">Linked to storefront cloud database</p>
+<body style="overflow-y: auto;">
+  <!-- LOGIN SCREEN -->
+  <div class="admin-login-container" id="scanner-login-screen" style="height: 100vh; background-color: #0f172a;">
+    <div class="login-card" style="background-color: #1e293b; border-color: #334155; color: #fff;">
+      <div class="center-text margin-bottom">
+        <div class="logo-icon" style="margin: 0 auto 12px; background-color: #0369a1; color: #38bdf8;"><i class="fa-solid fa-mobile-screen"></i></div>
+        <h2 style="color: #fff;">Phone Scanner Login</h2>
+        <p class="help-text" style="color: #94a3b8;">Enter account credentials to pair phone</p>
+      </div>
+      <form id="form-scanner-login">
+        <div class="form-group">
+          <label for="scanner-login-email" style="color: #94a3b8;">Email Address</label>
+          <input type="email" id="scanner-login-email" class="scan-input" required placeholder="pos1@test.com" style="width: 90%; margin-top: 6px;">
+        </div>
+        <div class="form-group margin-top">
+          <label for="scanner-login-password" style="color: #94a3b8;">Password</label>
+          <input type="password" id="scanner-login-password" class="scan-input" required placeholder="••••••••" style="width: 90%; margin-top: 6px;">
+        </div>
+        <div class="status-failed margin-top hidden" id="scanner-login-error-msg" style="font-size: 0.8125rem; font-weight: 600; text-align: center; color: var(--danger);">
+          Invalid account credentials!
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg margin-top" style="background-color: #0284c7; color: #fff; width: 100%; border: none; padding: 12px; border-radius: 8px;">Connect Scanner</button>
+      </form>
+    </div>
   </div>
 
-  <div class="scanner-main">
-    <div id="camera-feed-box"></div>
-
-    <div class="scanner-target-select">
-      <span class="target-label">Link Scan Destination:</span>
-      <select id="select-active-target" class="scan-input" style="width: 100%; border-color: #334155; height: auto;" onchange="setTarget(this.value)">
-        <option value="POS-1">POS-1 Terminal</option>
-        <option value="POS-2">POS-2 Terminal</option>
-        <option value="POS-3">POS-3 Terminal</option>
-      </select>
+  <div id="scanner-main-layout" class="hidden">
+    <div class="scanner-header">
+      <h1><i class="fa-solid fa-mobile-screen"></i> Wireless Phone Scanner</h1>
+      <p style="margin: 0; font-size: 0.8125rem; color: #94a3b8;">Paired Terminal: <strong id="display-paired-target" style="color: #38bdf8;">POS-1</strong></p>
     </div>
 
-    <div class="manual-input-box">
-      <div class="input-action-group">
-        <input type="text" id="manual-barcode" class="scan-input" placeholder="Or enter barcode manually...">
-        <button class="btn btn-primary" onclick="sendManualScan()" style="padding: 0 16px;">Send</button>
+    <div class="scanner-main">
+      <div id="camera-feed-box"></div>
+
+      <div class="manual-input-box" style="margin-top: 20px;">
+        <div class="input-action-group">
+          <input type="text" id="manual-barcode" class="scan-input" placeholder="Or enter barcode manually...">
+          <button class="btn btn-primary" onclick="sendManualScan()" style="padding: 0 16px;">Send</button>
+        </div>
       </div>
-    </div>
 
-    <div class="console-log" id="scan-console">
+      <div class="console-log" id="scan-console">
       [System] Phone scanner active. Waiting for code...
     </div>
   </div>
@@ -168,25 +185,51 @@
     let html5QrcodeScanner = null;
 
     document.addEventListener('DOMContentLoaded', () => {
-      startCamera();
       // Setup enter key listener on manual field
       document.getElementById('manual-barcode').onkeypress = (e) => {
         if (e.key === 'Enter') sendManualScan();
       };
-      
-      // Load saved target if any
-      const savedTarget = localStorage.getItem('scan_target_id');
-      if (savedTarget) {
-        activeTarget = savedTarget;
-        document.getElementById('select-active-target').value = savedTarget;
-      }
-    });
 
-    function setTarget(target) {
-      activeTarget = target;
-      localStorage.setItem('scan_target_id', target);
-      appendConsole(`Target destination switched to: ${target}`);
-    }
+      const loginScreen = document.getElementById('scanner-login-screen');
+      const mainLayout = document.getElementById('scanner-main-layout');
+      const displayTarget = document.getElementById('display-paired-target');
+
+      const applyLogin = (user) => {
+        // Derive target terminal from email (e.g., pos2@test.com -> POS-2)
+        const numMatch = user.email.match(/\d+/);
+        activeTarget = numMatch ? `POS-${numMatch[0]}` : 'POS-1';
+
+        displayTarget.innerText = activeTarget;
+        loginScreen.classList.add('hidden');
+        mainLayout.classList.remove('hidden');
+
+        startCamera();
+        appendConsole(`Phone paired with Terminal target: ${activeTarget} (${user.name})`);
+      };
+
+      // Check session
+      const savedUser = sessionStorage.getItem('current_scanner_user');
+      if (savedUser) {
+        applyLogin(JSON.parse(savedUser));
+      }
+
+      // Handle submit
+      document.getElementById('form-scanner-login').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('scanner-login-email').value.trim();
+        const pass = document.getElementById('scanner-login-password').value.trim();
+        const errMsg = document.getElementById('scanner-login-error-msg');
+
+        const matched = db.employees.find(emp => emp.email === email && emp.password === pass);
+        if (matched) {
+          errMsg.classList.add('hidden');
+          sessionStorage.setItem('current_scanner_user', JSON.stringify(matched));
+          applyLogin(matched);
+        } else {
+          errMsg.classList.remove('hidden');
+        }
+      });
+    });
 
     function startCamera() {
       html5QrcodeScanner = new Html5Qrcode("camera-feed-box");
