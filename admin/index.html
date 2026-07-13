@@ -391,6 +391,10 @@
                     <label for="set-currency">Currency Symbol</label>
                     <input type="text" id="set-currency" class="form-input" value="$">
                   </div>
+                  <div class="form-group form-span-2">
+                    <label for="set-aba-url">ABA PayWay Link / KHQR URL</label>
+                    <input type="text" id="set-aba-url" class="form-input" placeholder="e.g. https://link.payway.com.kh/ABAPAYEA437661K">
+                  </div>
                 </div>
                 <div class="form-group margin-top">
                   <button type="button" class="btn btn-primary" id="btn-save-settings">Save Configurations</button>
@@ -403,13 +407,7 @@
     </section>
   </main>
 
-  <footer class="system-logs-panel">
-    <div class="logs-header">
-      <h3><i class="fa-solid fa-terminal"></i> Live Cloud Database Logs</h3>
-      <button class="btn-text" id="btn-clear-logs">Clear Logs</button>
-    </div>
-    <div class="logs-console" id="system-logs-console"></div>
-  </footer>
+
 
   <!-- MODAL: ADD PRODUCT -->
   <div class="modal-overlay" id="modal-add-product">
@@ -540,6 +538,7 @@
   <script src="../shared/app.js"></script>
   <script>
     let isAdminAuthenticated = false;
+    let editingProductId = null;
 
     document.addEventListener('DOMContentLoaded', () => {
       initAdminNav();
@@ -596,7 +595,13 @@
       const btnCloseProductModal = document.getElementById('btn-close-product-modal');
 
       if(btnShowAddProduct) {
-        btnShowAddProduct.addEventListener('click', () => addProdModal.classList.add('active'));
+        btnShowAddProduct.addEventListener('click', () => {
+          editingProductId = null;
+          document.getElementById('form-new-product').reset();
+          document.querySelector('#modal-add-product h3').innerText = 'Add New Product';
+          document.querySelector('#form-new-product button[type="submit"]').innerText = 'Save Product';
+          addProdModal.classList.add('active');
+        });
       }
       if(btnCloseProductModal) {
         btnCloseProductModal.addEventListener('click', () => addProdModal.classList.remove('active'));
@@ -635,22 +640,49 @@
           barcode = document.getElementById('prod-barcode').value || `POS${Date.now()}`;
         }
 
-        const newProduct = {
-          id: (db.products.length + 1).toString(),
-          name, category, brand, supplier, cost, selling, tax, discount, unit, stock, barcode, image, description
-        };
+        if (editingProductId !== null) {
+          const index = db.products.findIndex(p => p.id === editingProductId);
+          if (index !== -1) {
+            const oldStock = db.products[index].stock;
+            const stockDiff = stock - oldStock;
+            
+            db.products[index] = {
+              id: editingProductId,
+              name, category, brand, supplier, cost, selling, tax, discount, unit, stock, barcode, image, description
+            };
 
-        db.products.push(newProduct);
-        db.inventoryHistory.unshift({
-          date: new Date().toISOString().replace('T', ' ').substring(0, 16),
-          product: name,
-          action: 'Initial Product Upload',
-          qtyChange: `+${stock}`,
-          newStock: stock
-        });
+            if (stockDiff !== 0) {
+              db.inventoryHistory.unshift({
+                date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+                product: name,
+                action: 'Stock Adjustment (Product Edit)',
+                qtyChange: stockDiff > 0 ? `+${stockDiff}` : `${stockDiff}`,
+                newStock: stock
+              });
+            }
 
-        logConsole(`New product registered: ${name}`, 'success');
+            logConsole(`Product updated: ${name}`, 'success');
+          }
+        } else {
+          const newProduct = {
+            id: (db.products.length + 1).toString(),
+            name, category, brand, supplier, cost, selling, tax, discount, unit, stock, barcode, image, description
+          };
+
+          db.products.push(newProduct);
+          db.inventoryHistory.unshift({
+            date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+            product: name,
+            action: 'Initial Product Upload',
+            qtyChange: `+${stock}`,
+            newStock: stock
+          });
+
+          logConsole(`New product registered: ${name}`, 'success');
+        }
+
         saveDB();
+        editingProductId = null;
         document.getElementById('form-new-product').reset();
         addProdModal.classList.remove('active');
       });
@@ -737,6 +769,7 @@
         db.settings.storeName = document.getElementById('set-store-name').value;
         db.settings.taxRate = parseFloat(document.getElementById('set-tax-rate').value) || 10;
         db.settings.currency = document.getElementById('set-currency').value;
+        db.settings.abaPaymentUrl = document.getElementById('set-aba-url').value;
         logConsole('Settings saved successfully.', 'success');
         saveDB();
       });
@@ -814,7 +847,10 @@
             <td>${db.settings.currency}${p.cost.toFixed(2)}</td>
             <td>${db.settings.currency}${p.selling.toFixed(2)}</td>
             <td><span class="badge ${stockBadge}">${p.stock} ${p.unit}</span></td>
-            <td><button class="btn btn-outline btn-text text-danger" onclick="deleteProduct('${p.id}')">Delete</button></td>
+            <td>
+              <button class="btn btn-outline btn-text text-primary" onclick="editProduct('${p.id}')" style="margin-right: 6px; padding: 4px 8px; font-size: 0.75rem;">Edit</button>
+              <button class="btn btn-outline btn-text text-danger" onclick="deleteProduct('${p.id}')" style="padding: 4px 8px; font-size: 0.75rem;">Delete</button>
+            </td>
           </tr>
         `;
       }).join('');
@@ -909,6 +945,14 @@
       if (pSup) pSup.innerHTML = '<option value="">Select Supplier</option>' + db.suppliers.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
       const invSel = document.getElementById('inv-select-product');
       if (invSel) invSel.innerHTML = db.products.map(p => `<option value="${p.id}">${p.name} (Stock: ${p.stock})</option>`).join('');
+
+      // Populate settings fields
+      if (document.getElementById('set-store-name')) {
+        document.getElementById('set-store-name').value = db.settings.storeName || '';
+        document.getElementById('set-tax-rate').value = db.settings.taxRate || 10;
+        document.getElementById('set-currency').value = db.settings.currency || '$';
+        document.getElementById('set-aba-url').value = db.settings.abaPaymentUrl || 'https://link.payway.com.kh/ABAPAYEA437661K';
+      }
     }
 
     function deleteEmployee(email) {
@@ -924,6 +968,42 @@
           saveDB();
         }
       }
+    }
+
+    function editProduct(id) {
+      const prod = db.products.find(p => p.id === id);
+      if (!prod) return;
+
+      editingProductId = id;
+
+      // Populate form
+      document.getElementById('prod-name').value = prod.name;
+      document.getElementById('prod-category').value = prod.category;
+      document.getElementById('prod-brand').value = prod.brand || '';
+      document.getElementById('prod-supplier').value = prod.supplier || '';
+      document.getElementById('prod-cost').value = prod.cost;
+      document.getElementById('prod-selling').value = prod.selling;
+      document.getElementById('prod-tax').value = prod.tax || 10;
+      document.getElementById('prod-discount').value = prod.discount || 0;
+      document.getElementById('prod-unit').value = prod.unit || 'Pcs';
+      document.getElementById('prod-stock').value = prod.stock;
+      document.getElementById('prod-image').value = prod.image || '';
+      document.getElementById('prod-description').value = prod.description || '';
+      document.getElementById('prod-barcode').value = prod.barcode || '';
+
+      // Set radio toggle to manual scan input
+      const radios = document.getElementsByName('barcode-method');
+      radios.forEach(radio => {
+        if (radio.value === 'scan') radio.checked = true;
+      });
+      document.getElementById('barcode-input-container').style.display = 'block';
+
+      // Update Modal Titles
+      document.querySelector('#modal-add-product h3').innerText = 'Edit Product';
+      document.querySelector('#form-new-product button[type="submit"]').innerText = 'Update Product';
+
+      // Show Modal
+      document.getElementById('modal-add-product').classList.add('active');
     }
   </script>
 </body>
