@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Staff Verification Terminal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="../shared/styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    body {
+      background-color: #0f172a;
+      color: #fff;
+    }
+    .check-container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    .check-header {
+      text-align: center;
+      padding: 16px 0;
+      border-bottom: 1px solid #1e293b;
+    }
+    .check-header h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #38bdf8;
+    }
+    #camera-reader-box {
+      width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 16px 0;
+      background: #1e293b;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    }
+    .order-details-card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+      border: 1px solid #334155;
+    }
+    .order-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #334155;
+    }
+    .order-item-row:last-child {
+      border-bottom: none;
+    }
+    .checkbox-custom {
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      border: 2px solid #38bdf8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .checkbox-custom.checked {
+      background: #38bdf8;
+    }
+    .checkbox-custom i {
+      color: #0f172a;
+      font-size: 0.75rem;
+      display: none;
+    }
+    .checkbox-custom.checked i {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <!-- LOGIN SCREEN -->
+  <div class="admin-login-container" id="staff-login-screen" style="height: 100vh;">
+    <div class="login-card" style="background-color: #1e293b; border-color: #334155; color: #fff;">
+      <div class="center-text margin-bottom">
+        <div class="logo-icon" style="margin: 0 auto 12px; background-color: #0369a1; color: #38bdf8;"><i class="fa-solid fa-user-shield"></i></div>
+        <h2 style="color: #fff;">Staff Gate Control</h2>
+        <p class="help-text" style="color: #94a3b8;">Log in to verify receipts & open gates</p>
+      </div>
+      <form id="form-staff-login">
+        <div class="form-group">
+          <label for="staff-email" style="color: #94a3b8;">Email Address</label>
+          <input type="email" id="staff-email" class="scan-input" required placeholder="cashier1@test.com" style="width: 90%; margin-top: 6px;">
+        </div>
+        <div class="form-group margin-top">
+          <label for="staff-password" style="color: #94a3b8;">Password</label>
+          <input type="password" id="staff-password" class="scan-input" required placeholder="••••••••" style="width: 90%; margin-top: 6px;">
+        </div>
+        <div class="status-failed margin-top hidden" id="staff-login-error-msg" style="font-size: 0.8125rem; font-weight: 600; text-align: center; color: var(--danger);">
+          Invalid staff account!
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg margin-top" style="background-color: #0284c7; color: #fff; width: 100%; border: none; padding: 12px; border-radius: 8px;">Log In</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN VERIFICATION LAYOUT -->
+  <div class="check-container hidden" id="staff-main-layout">
+    <div class="check-header">
+      <h1><i class="fa-solid fa-shield-halved"></i> Receipt Checker</h1>
+      <p style="margin: 4px 0 0; color: #94a3b8; font-size: 0.8125rem;">Scan customer receipt to unlock exit gate</p>
+    </div>
+
+    <!-- Scanner Box -->
+    <div id="camera-reader-box"></div>
+
+    <div class="manual-input-box" style="margin-top: 12px;">
+      <div class="input-action-group">
+        <input type="text" id="manual-receipt-id" class="scan-input" placeholder="Or enter TX receipt code...">
+        <button class="btn btn-primary" id="btn-submit-manual" style="padding: 0 16px;">Verify</button>
+      </div>
+    </div>
+
+    <!-- Active verified sale display -->
+    <div id="verified-sale-display" class="hidden">
+      <div class="order-details-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #334155;">
+          <div>
+            <h3 style="color: #38bdf8; margin: 0;" id="order-tx-id">TX-10001</h3>
+            <span style="font-size: 0.75rem; color: #94a3b8;" id="order-date">Date: 2026-07-13 14:02</span>
+          </div>
+          <div>
+            <span class="badge badge-success" style="font-size: 0.8125rem; padding: 6px 12px;">PAID</span>
+          </div>
+        </div>
+
+        <div id="verified-items-list" style="margin-top: 12px;">
+          <!-- Item rows inserted here -->
+        </div>
+
+        <div style="margin-top: 16px; display: flex; justify-content: space-between; font-weight: 700; font-size: 1.125rem; color: #38bdf8;">
+          <span>Grand Total:</span>
+          <span id="order-total">$0.00</span>
+        </div>
+      </div>
+
+      <button class="btn btn-success btn-block btn-lg margin-top" id="btn-release-gate" style="padding: 14px; font-weight: 700; font-size: 1.125rem; background-color: #10b981; border: none; border-radius: 8px;">
+        <i class="fa-solid fa-door-open"></i> Approve & Open Gate
+      </button>
+    </div>
+  </div>
+
+  <script src="../shared/app.js"></script>
+  <script>
+    let html5QrcodeScanner = null;
+    let selectedSale = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const loginScreen = document.getElementById('staff-login-screen');
+      const mainLayout = document.getElementById('staff-main-layout');
+
+      const applyLogin = (user) => {
+        loginScreen.classList.add('hidden');
+        mainLayout.classList.remove('hidden');
+        startCameraScanner();
+      };
+
+      // Check session
+      const savedUser = sessionStorage.getItem('current_staff_user');
+      if (savedUser) {
+        applyLogin(JSON.parse(savedUser));
+      }
+
+      // Handle submit login
+      document.getElementById('form-staff-login').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('staff-email').value.trim();
+        const pass = document.getElementById('staff-password').value.trim();
+        const errMsg = document.getElementById('staff-login-error-msg');
+
+        const matched = db.employees.find(emp => emp.email === email && emp.password === pass);
+        if (matched && (matched.role === 'Super Admin' || matched.role === 'Manager' || matched.role === 'Cashier')) {
+          errMsg.classList.add('hidden');
+          sessionStorage.setItem('current_staff_user', JSON.stringify(matched));
+          applyLogin(matched);
+        } else {
+          errMsg.classList.remove('hidden');
+        }
+      });
+
+      // Manual input code triggers
+      document.getElementById('btn-submit-manual').onclick = () => {
+        const val = document.getElementById('manual-receipt-id').value.trim().toUpperCase();
+        if (val) loadReceiptDetails(val);
+      };
+      document.getElementById('manual-receipt-id').onkeypress = (e) => {
+        if (e.key === 'Enter') {
+          const val = document.getElementById('manual-receipt-id').value.trim().toUpperCase();
+          if (val) loadReceiptDetails(val);
+        }
+      };
+
+      // Wire up release gate button
+      document.getElementById('btn-release-gate').onclick = async () => {
+        try {
+          const res = await fetch('/api/gate-clearance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ active: true })
+          });
+          if (res.ok) {
+            // Locally set to sync
+            localStorage.setItem('gate_clearance_active', 'true');
+            alert('Gate cleared wirelessly!');
+            document.getElementById('verified-sale-display').classList.add('hidden');
+            document.getElementById('manual-receipt-id').value = '';
+          }
+        } catch(err) {
+          alert('Failed to connect to VPS gate controllers.');
+        }
+      };
+    });
+
+    function startCameraScanner() {
+      html5QrcodeScanner = new Html5Qrcode("camera-reader-box");
+      const config = { fps: 20, qrbox: { width: 250, height: 250 } };
+      html5QrcodeScanner.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText) => {
+          loadReceiptDetails(decodedText.trim().toUpperCase());
+        }
+      ).catch(err => {
+        console.warn('Camera failed to load, origin insecure or permission denied.');
+      });
+    }
+
+    function loadReceiptDetails(receiptId) {
+      // Find sale matching receipt id
+      const sale = db.sales.find(s => s.txNumber === receiptId);
+      if (!sale) {
+        alert('Receipt code not found in cloud database!');
+        return;
+      }
+
+      selectedSale = sale;
+
+      // Populate layout
+      document.getElementById('order-tx-id').innerText = sale.txNumber;
+      document.getElementById('order-date').innerText = `Date: ${sale.date}`;
+      document.getElementById('order-total').innerText = `${db.settings.currency}${sale.total.toFixed(2)}`;
+
+      // Generate random mock item check list matching total items count
+      const listWrapper = document.getElementById('verified-items-list');
+      listWrapper.innerHTML = '';
+      
+      // Let's list general checkable rows based on sales items count
+      for (let i = 0; i < (sale.itemsCount || 1); i++) {
+        const row = document.createElement('div');
+        row.className = 'order-item-row';
+        row.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="checkbox-custom" onclick="this.classList.toggle('checked')">
+              <i class="fa-solid fa-check"></i>
+            </div>
+            <span>Item Item #${i + 1}</span>
+          </div>
+          <span>x1</span>
+        `;
+        listWrapper.appendChild(row);
+      }
+
+      document.getElementById('verified-sale-display').classList.remove('hidden');
+      if (navigator.vibrate) navigator.vibrate(100);
+    }
+  </script>
+</body>
+</html>
