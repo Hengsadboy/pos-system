@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Smart Exit Gate Simulator</title>
   <link rel="stylesheet" href="../shared/styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
   <header class="system-header">
@@ -64,8 +65,12 @@
               </div>
 
               <div class="content-card">
-                <h3>Scan Ticket (Phone / Receipt)</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <h3 style="margin: 0;">Scan Ticket (Phone / Receipt)</h3>
+                  <button class="btn btn-outline" id="btn-toggle-gate-camera" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-camera"></i> Camera Scan</button>
+                </div>
                 <p class="help-text">Scan paid ticket code (e.g. TX-10001) to unlock gate</p>
+                <div id="gate-camera-reader" style="width: 100%; border-radius: var(--radius-md); overflow: hidden; background: #000; margin-top: 12px; display: none; box-shadow: var(--shadow-sm);"></div>
                 <div class="input-action-group margin-top">
                   <input type="text" id="input-gate-barcode" class="form-input" placeholder="Enter receipt code...">
                   <button class="btn btn-primary" id="btn-trigger-gate-scan">Scan Ticket</button>
@@ -195,6 +200,56 @@
       };
 
       // Handle ticket scan
+      // Handle ticket scan
+      let html5QrcodeScanner = null;
+      let cameraScanning = false;
+      const toggleCamBtn = document.getElementById('btn-toggle-gate-camera');
+      const camReaderDiv = document.getElementById('gate-camera-reader');
+
+      const startCamera = () => {
+        camReaderDiv.style.display = 'block';
+        html5QrcodeScanner = new Html5Qrcode("gate-camera-reader");
+        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+          document.getElementById('input-gate-barcode').value = decodedText;
+          processGateScan();
+          stopCamera();
+        };
+        const config = { fps: 15, qrbox: { width: 220, height: 220 } };
+        html5QrcodeScanner.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
+          .then(() => {
+            cameraScanning = true;
+            toggleCamBtn.innerHTML = '<i class="fa-solid fa-camera-roto"></i> Stop Camera';
+            toggleCamBtn.classList.remove('btn-outline');
+            toggleCamBtn.classList.add('btn-danger');
+            logConsole("Gate Scanner: Camera active.", "info");
+          })
+          .catch(err => {
+            logConsole("Camera access blocked or unavailable.", "error");
+            camReaderDiv.style.display = 'none';
+          });
+      };
+
+      const stopCamera = () => {
+        if (!cameraScanning || !html5QrcodeScanner) return;
+        html5QrcodeScanner.stop().then(() => {
+          cameraScanning = false;
+          camReaderDiv.style.display = 'none';
+          camReaderDiv.innerHTML = '';
+          toggleCamBtn.innerHTML = '<i class="fa-solid fa-camera"></i> Camera Scan';
+          toggleCamBtn.classList.remove('btn-danger');
+          toggleCamBtn.classList.add('btn-outline');
+          logConsole("Gate Scanner: Camera stopped.", "info");
+        }).catch(err => console.error(err));
+      };
+
+      toggleCamBtn.onclick = () => {
+        if (cameraScanning) {
+          stopCamera();
+        } else {
+          startCamera();
+        }
+      };
+
       const processGateScan = () => {
         const barcode = document.getElementById('input-gate-barcode').value.trim();
         document.getElementById('input-gate-barcode').value = '';
@@ -209,12 +264,16 @@
           logConsole(`MATCH FOUND: Receipt ${barcode} verified as PAID via ${matchedSale.method}. Clear for exit.`, 'success');
           localStorage.setItem('gate_clearance_active', 'true');
           
+          if (navigator.vibrate) navigator.vibrate(200);
+
           // Auto-trigger the passage sensor!
           document.getElementById('btn-simulate-pass').click();
         } else {
           logConsole(`NO MATCH FOUND: Receipt code "${barcode}" is invalid or unpaid!`, 'error');
           localStorage.setItem('gate_clearance_active', 'false');
           
+          if (navigator.vibrate) navigator.vibrate(500);
+
           // Trigger security alarm immediately
           logConsole('SECURITY ALARM TRIGGERED: Unauthorized ticket scanned at Exit Gate!', 'error');
           siren.classList.add('active');

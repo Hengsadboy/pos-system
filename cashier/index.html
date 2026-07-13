@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Cashier POS operator Terminal</title>
   <link rel="stylesheet" href="../shared/styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
   <header class="system-header">
@@ -41,8 +42,11 @@
             <div class="content-card pos-scan-simulator">
               <div class="card-header">
                 <h3>Barcode Scanning</h3>
+                <button class="btn btn-outline" id="btn-toggle-cashier-camera" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-camera"></i> Camera Scan</button>
               </div>
               <div class="card-body">
+                <div id="cashier-camera-reader" style="width: 100%; border-radius: var(--radius-md); overflow: hidden; background: #000; margin-bottom: 12px; display: none; box-shadow: var(--shadow-sm);"></div>
+                
                 <div class="scan-input-area" id="scan-area-barcode">
                   <div class="input-action-group">
                     <input type="text" id="input-barcode-scan" class="form-input" placeholder="Scan barcode or type code...">
@@ -234,7 +238,56 @@
       logConsole('Cashier Operator terminal ready.', 'info');
     });
 
+    let html5QrcodeScanner = null;
+    let cameraScanning = false;
+
     function initPOSScanners() {
+      const toggleCamBtn = document.getElementById('btn-toggle-cashier-camera');
+      const camReaderDiv = document.getElementById('cashier-camera-reader');
+
+      const startCamera = () => {
+        camReaderDiv.style.display = 'block';
+        html5QrcodeScanner = new Html5Qrcode("cashier-camera-reader");
+        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+          triggerScan(decodedText);
+          logConsole(`Cashier Camera Scanned: ${decodedText}`, 'success');
+        };
+        const config = { fps: 15, qrbox: { width: 220, height: 220 } };
+        html5QrcodeScanner.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
+          .then(() => {
+            cameraScanning = true;
+            toggleCamBtn.innerHTML = '<i class="fa-solid fa-camera-roto"></i> Stop Camera';
+            toggleCamBtn.classList.remove('btn-outline');
+            toggleCamBtn.classList.add('btn-danger');
+            logConsole("Cashier Phone Camera active.", "info");
+          })
+          .catch(err => {
+            logConsole("Camera access blocked or unavailable.", "error");
+            camReaderDiv.style.display = 'none';
+          });
+      };
+
+      const stopCamera = () => {
+        if (!cameraScanning || !html5QrcodeScanner) return;
+        html5QrcodeScanner.stop().then(() => {
+          cameraScanning = false;
+          camReaderDiv.style.display = 'none';
+          camReaderDiv.innerHTML = '';
+          toggleCamBtn.innerHTML = '<i class="fa-solid fa-camera"></i> Camera Scan';
+          toggleCamBtn.classList.remove('btn-danger');
+          toggleCamBtn.classList.add('btn-outline');
+          logConsole("Cashier Phone Camera stopped.", "info");
+        }).catch(err => console.error(err));
+      };
+
+      toggleCamBtn.onclick = () => {
+        if (cameraScanning) {
+          stopCamera();
+        } else {
+          startCamera();
+        }
+      };
+
       document.getElementById('btn-trigger-barcode-scan').onclick = () => {
         const val = document.getElementById('input-barcode-scan').value.trim();
         if (val) triggerScan(val);
@@ -264,6 +317,9 @@
         alert('Product not found!');
         return;
       }
+
+      // Vibrate phone on scan
+      if (navigator.vibrate) navigator.vibrate(200);
 
       document.getElementById('scan-display-image').innerHTML = product.image ? `<img src="${product.image}">` : '<i class="fa-solid fa-box"></i>';
       document.getElementById('scan-display-name').innerText = product.name;
