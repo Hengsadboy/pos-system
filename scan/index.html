@@ -183,7 +183,7 @@
         const numMatch = user.email.match(/\d+/);
         activeTarget = numMatch ? `POS-${numMatch[0]}` : 'POS-1';
 
-        displayTarget.innerText = activeTarget;
+        if (displayTarget) displayTarget.innerText = activeTarget;
         loginScreen.classList.add('hidden');
         mainLayout.classList.remove('hidden');
 
