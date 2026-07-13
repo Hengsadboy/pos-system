@@ -302,7 +302,7 @@
         }
       });
 
-      // Listen to remote scan events from phone scanner
+      // Listen to remote scan events from phone scanner (local cross-tab fallback)
       window.addEventListener('storage', (e) => {
         if (e.key === 'remote_scan_event' && e.newValue) {
           try {
@@ -316,6 +316,28 @@
           }
         }
       });
+
+      // Poll server for remote scans wirelessly across physical devices
+      let lastProcessedScanTimestamp = Date.now();
+      setInterval(async () => {
+        if (!serverMode) return;
+        try {
+          const res = await fetch('/api/scan');
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.event) {
+              const event = data.event;
+              if (event.target === activeTerminalId && event.timestamp > lastProcessedScanTimestamp) {
+                lastProcessedScanTimestamp = event.timestamp;
+                triggerScan(event.barcode);
+                logConsole(`Wireless Remote Scan Received [${event.target}]: ${event.barcode}`, 'success');
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Failed to poll wireless scan events:", e);
+        }
+      }, 1500);
     });
 
     let html5QrcodeScanner = null;
