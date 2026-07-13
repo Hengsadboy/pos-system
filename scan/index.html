@@ -12,8 +12,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
   <style>
     body {
-      background-color: #0f172a;
-      color: #f8fafc;
+      background-color: #ffffff;
+      color: #0f172a;
       font-family: 'Inter', sans-serif;
       margin: 0;
       padding: 0;
@@ -23,17 +23,7 @@
       overflow: hidden;
     }
     .scanner-header {
-      background-color: #1e293b;
-      padding: 16px;
-      text-align: center;
-      border-bottom: 1px solid #334155;
-      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    }
-    .scanner-header h1 {
-      font-size: 1.25rem;
-      margin: 0 0 4px 0;
-      color: #38bdf8;
-      font-weight: 700;
+      display: none !important;
     }
     .scanner-main {
       flex: 1;
@@ -134,21 +124,21 @@
 </head>
 <body style="overflow-y: auto;">
   <!-- LOGIN SCREEN -->
-  <div class="admin-login-container" id="scanner-login-screen" style="height: 100vh; background-color: #0f172a;">
-    <div class="login-card" style="background-color: #1e293b; border-color: #334155; color: #fff;">
+  <div class="admin-login-container" id="scanner-login-screen" style="height: 100vh; background-color: #ffffff;">
+    <div class="login-card" style="background-color: #f8fafc; border-color: #e2e8f0; color: #0f172a; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
       <div class="center-text margin-bottom">
-        <div class="logo-icon" style="margin: 0 auto 12px; background-color: #0369a1; color: #38bdf8;"><i class="fa-solid fa-mobile-screen"></i></div>
-        <h2 style="color: #fff;">Phone Scanner Login</h2>
-        <p class="help-text" style="color: #94a3b8;">Enter account credentials to pair phone</p>
+        <div class="logo-icon" style="margin: 0 auto 12px; background-color: #0284c7; color: #fff;"><i class="fa-solid fa-mobile-screen"></i></div>
+        <h2 style="color: #0f172a;">Phone Scanner Login</h2>
+        <p class="help-text" style="color: #64748b;">Enter account credentials to pair phone</p>
       </div>
       <form id="form-scanner-login">
         <div class="form-group">
-          <label for="scanner-login-email" style="color: #94a3b8;">Email Address</label>
-          <input type="email" id="scanner-login-email" class="scan-input" required placeholder="pos1@test.com" style="width: 90%; margin-top: 6px;">
+          <label for="scanner-login-email" style="color: #64748b;">Email Address</label>
+          <input type="email" id="scanner-login-email" class="scan-input" required placeholder="pos1@test.com" style="width: 90%; margin-top: 6px; background-color: #fff; border-color: #cbd5e1; color: #0f172a;">
         </div>
         <div class="form-group margin-top">
-          <label for="scanner-login-password" style="color: #94a3b8;">Password</label>
-          <input type="password" id="scanner-login-password" class="scan-input" required placeholder="••••••••" style="width: 90%; margin-top: 6px;">
+          <label for="scanner-login-password" style="color: #64748b;">Password</label>
+          <input type="password" id="scanner-login-password" class="scan-input" required placeholder="••••••••" style="width: 90%; margin-top: 6px; background-color: #fff; border-color: #cbd5e1; color: #0f172a;">
         </div>
         <div class="status-failed margin-top hidden" id="scanner-login-error-msg" style="font-size: 0.8125rem; font-weight: 600; text-align: center; color: var(--danger);">
           Invalid account credentials!
@@ -159,23 +149,17 @@
   </div>
 
   <div id="scanner-main-layout" class="hidden">
-    <div class="scanner-header">
-      <h1><i class="fa-solid fa-mobile-screen"></i> Wireless Phone Scanner</h1>
-      <p style="margin: 0; font-size: 0.8125rem; color: #94a3b8;">Paired Terminal: <strong id="display-paired-target" style="color: #38bdf8;">POS-1</strong></p>
-    </div>
+    <div class="scanner-main" style="padding: 0; height: 100vh; justify-content: center; align-items: center; display: flex;">
+      <div id="camera-feed-box" style="width: 100vw; height: 100vh; max-width: 100vw; border-radius: 0; border: none; box-shadow: none;"></div>
 
-    <div class="scanner-main">
-      <div id="camera-feed-box"></div>
-
-      <div class="manual-input-box" style="margin-top: 20px;">
+      <div class="manual-input-box hidden" style="display: none;">
         <div class="input-action-group">
-          <input type="text" id="manual-barcode" class="scan-input" placeholder="Or enter barcode manually...">
-          <button class="btn btn-primary" onclick="sendManualScan()" style="padding: 0 16px;">Send</button>
+          <input type="text" id="manual-barcode" class="scan-input">
+          <button class="btn btn-primary" onclick="sendManualScan()">Send</button>
         </div>
       </div>
 
-      <div class="console-log" id="scan-console">
-      [System] Phone scanner active. Waiting for code...
+      <div class="console-log hidden" id="scan-console" style="display: none;"></div>
     </div>
   </div>
 
