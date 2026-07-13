@@ -559,12 +559,12 @@
               });
               const data = await res.json();
               console.log("ABA PayWay API response:", data);
-              const tranId = data.tran_id;
+              const tranId = (data.status && data.status.tran_id) ? data.status.tran_id : data.tran_id;
               const clientId = data.client_id;
               
               // Extract the target payload or raw image
               const qrImg = data.qr_image || data.qrImg || data.image;
-              const qrLink = data.qr || data.qr_code || data.qrCode || data.qr_link || data.qrLink || data.url || (db.settings.abaPaymentUrl || "https://link.payway.com.kh/ABAPAYEA437661K");
+              const qrLink = data.qr_string || data.qr || data.qr_code || data.qrCode || data.qr_link || data.qrLink || data.url || (db.settings.abaPaymentUrl || "https://link.payway.com.kh/ABAPAYEA437661K");
 
               if (qrImg && (qrImg.startsWith('data:image') || qrImg.startsWith('http'))) {
                 // If the response contains a direct renderable image URL or Base64 string
