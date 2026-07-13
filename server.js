@@ -2,7 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const app = express();
-const PORT = 3000;
+const PORT = 80;
 
 const DB_FILE = path.join(__dirname, 'database.json');
 
