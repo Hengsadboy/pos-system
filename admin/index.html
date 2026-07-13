@@ -844,7 +844,8 @@
             <td>${db.settings.currency}${p.selling.toFixed(2)}</td>
             <td><span class="badge ${stockBadge}">${p.stock} ${p.unit}</span></td>
             <td>
-              <button class="btn btn-outline btn-text text-primary" onclick="editProduct('${p.id}')" style="margin-right: 6px; padding: 4px 8px; font-size: 0.75rem;">Edit</button>
+              <button class="btn btn-outline btn-text text-primary" onclick="editProduct('${p.id}')" style="margin-right: 4px; padding: 4px 8px; font-size: 0.75rem;">Edit</button>
+              <button class="btn btn-outline btn-text text-success" onclick="printBarcodeTag('${p.barcode}', '${p.name.replace(/'/g, "\\'")}', ${p.selling})" style="margin-right: 4px; padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-print"></i> Tag</button>
               <button class="btn btn-outline btn-text text-danger" onclick="deleteProduct('${p.id}')" style="padding: 4px 8px; font-size: 0.75rem;">Delete</button>
             </td>
           </tr>
@@ -1000,6 +1001,47 @@
 
       // Show Modal
       document.getElementById('modal-add-product').classList.add('active');
+    }
+
+    function printBarcodeTag(barcode, name, price) {
+      const printWindow = window.open('', '_blank', 'width=350,height=220');
+      printWindow.document.write(`
+        <html>
+        <head>
+          <title>Print Label - ${name}</title>
+          <style>
+            body { 
+              font-family: 'Inter', system-ui, sans-serif; 
+              text-align: center; 
+              padding: 10px; 
+              margin: 0; 
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              height: 100vh;
+            }
+            .label-title { font-weight: bold; font-size: 0.95rem; margin-bottom: 2px; text-transform: uppercase; color: #000; }
+            .label-price { font-size: 1.15rem; font-weight: 800; color: #000; margin-bottom: 8px; }
+            .barcode-img { width: 180px; height: 55px; object-fit: contain; }
+            .barcode-num { font-size: 0.85rem; letter-spacing: 2px; font-weight: 700; margin-top: 4px; color: #000; }
+          </style>
+        </head>
+        <body>
+          <div class="label-title">${name}</div>
+          <div class="label-price">${db.settings.currency}${parseFloat(price).toFixed(2)}</div>
+          <img class="barcode-img" src="https://api-bwipjs.metafloor.com/?bcid=code128&text=${encodeURIComponent(barcode)}&scale=3&rotate=N&includetext=false">
+          <div class="barcode-num">${barcode}</div>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            }
+          <\/script>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
     }
   </script>
 </body>
