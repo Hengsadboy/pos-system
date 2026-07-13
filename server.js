@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const app = express();
-const PORT = 80;
+const PORT = process.env.PORT || 3000;
 
 const DB_FILE = path.join(__dirname, 'database.db');
 
