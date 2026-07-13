@@ -772,11 +772,6 @@
         db.settings.abaPaymentUrl = document.getElementById('set-aba-url').value;
         logConsole('Settings saved successfully.', 'success');
         saveDB();
-      });
-
-      document.getElementById('btn-clear-logs').addEventListener('click', () => {
-        document.getElementById('system-logs-console').innerHTML = '';
-      });
     }
 
     function deleteProduct(id) {

@@ -286,10 +286,6 @@
       document.getElementById('input-gate-barcode').onkeypress = (e) => {
         if (e.key === 'Enter') processGateScan();
       };
-
-      document.getElementById('btn-clear-logs').onclick = () => {
-        document.getElementById('system-logs-console').innerHTML = '';
-      };
     }
 
     function updatePageViews() {
