@@ -17,8 +17,13 @@
       <!-- Self-Checkout Container -->
       <div class="pos-layout self-mode">
         <header class="pos-header">
-          <div class="pos-mode-selector" style="visibility: hidden;">
-            <button class="pos-mode-btn active" id="btn-mode-self"><i class="fa-solid fa-desktop"></i> Self-Checkout Kiosk</button>
+          <div class="pos-mode-selector">
+            <span style="font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); margin-right: 6px;">Terminal:</span>
+            <select id="select-terminal-id" class="form-input" style="width: 100px; display: inline-block; padding: 4px 8px; height: auto; margin: 0; font-size: 0.8125rem;">
+              <option value="POS-1">POS-1</option>
+              <option value="POS-2">POS-2</option>
+              <option value="POS-3">POS-3</option>
+            </select>
           </div>
           <div class="pos-member-tag" id="active-customer-tag">
             <i class="fa-solid fa-address-card"></i> <span>Walk-in Customer</span>
@@ -218,16 +223,27 @@
       initPOSScanners();
       initCartActions();
       updatePageViews();
-      logConsole('Self-Checkout Kiosk loaded.', 'info');
+
+      // Retrieve previous terminal selection
+      const termSelect = document.getElementById('select-terminal-id');
+      if (localStorage.getItem('self_terminal_id')) {
+        termSelect.value = localStorage.getItem('self_terminal_id');
+      }
+      logConsole(`Self Kiosk active on: ${termSelect.value}`, 'info');
+
+      termSelect.onchange = (e) => {
+        localStorage.setItem('self_terminal_id', e.target.value);
+        logConsole(`Switched terminal profile to: ${e.target.value}`, 'info');
+      };
 
       // Listen to remote scan events from phone scanner
       window.addEventListener('storage', (e) => {
         if (e.key === 'remote_scan_event' && e.newValue) {
           try {
             const data = JSON.parse(e.newValue);
-            if (data.target === 'self') {
+            if (data.target === termSelect.value) {
               triggerScan(data.barcode);
-              logConsole(`Remote Phone Scan Applied: ${data.barcode}`, 'success');
+              logConsole(`Remote Scan Applied [${data.target}]: ${data.barcode}`, 'success');
             }
           } catch(err) {
             console.error(err);

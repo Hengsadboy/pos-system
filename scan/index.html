@@ -143,14 +143,11 @@
 
     <div class="scanner-target-select">
       <span class="target-label">Link Scan Destination:</span>
-      <div class="target-options">
-        <button class="target-btn active" id="target-self" onclick="setTarget('self')">
-          <i class="fa-solid fa-desktop"></i> Self POS
-        </button>
-        <button class="target-btn" id="target-cashier" onclick="setTarget('cashier')">
-          <i class="fa-solid fa-cash-register"></i> Cashier POS
-        </button>
-      </div>
+      <select id="select-active-target" class="scan-input" style="width: 100%; border-color: #334155; height: auto;" onchange="setTarget(this.value)">
+        <option value="POS-1">POS-1 Terminal</option>
+        <option value="POS-2">POS-2 Terminal</option>
+        <option value="POS-3">POS-3 Terminal</option>
+      </select>
     </div>
 
     <div class="manual-input-box">
@@ -167,7 +164,7 @@
 
   <script src="../shared/app.js"></script>
   <script>
-    let activeTarget = 'self';
+    let activeTarget = 'POS-1';
     let html5QrcodeScanner = null;
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -176,13 +173,19 @@
       document.getElementById('manual-barcode').onkeypress = (e) => {
         if (e.key === 'Enter') sendManualScan();
       };
+      
+      // Load saved target if any
+      const savedTarget = localStorage.getItem('scan_target_id');
+      if (savedTarget) {
+        activeTarget = savedTarget;
+        document.getElementById('select-active-target').value = savedTarget;
+      }
     });
 
     function setTarget(target) {
       activeTarget = target;
-      document.getElementById('target-self').classList.toggle('active', target === 'self');
-      document.getElementById('target-cashier').classList.toggle('active', target === 'cashier');
-      appendConsole(`Target destination switched to: ${target === 'self' ? 'Self POS' : 'Cashier POS'}`);
+      localStorage.setItem('scan_target_id', target);
+      appendConsole(`Target destination switched to: ${target}`);
     }
 
     function startCamera() {
